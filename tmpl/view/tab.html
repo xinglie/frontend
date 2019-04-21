@@ -1,0 +1,5 @@
+<ul class="clearfix">
+    {{each list as tab}}
+    <li class="tab-item{{if tab.key==active}} tab-active{{/if}}" mx-click="{{tab.key!=active}}?@{change.tab}({tab:'{{=tab.key}}'})">{{=i18n(tab.text)}}</li>
+    {{/each}}
+</ul>

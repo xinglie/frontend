@@ -1,0 +1,6 @@
+{{each list as site}}
+<div class="list-item">
+    <a href="{{=site.link}}" title="{{=site.link}}" class="list-link" target="_blank" rel="noopener noreferrer">{{=site.name}}</a>
+    <div class="list-desc">{{=site.desc}}</div>
+</div>
+{{/each}}

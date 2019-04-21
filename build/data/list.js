@@ -1,0 +1,1 @@
+import t from"../lib/magix.js";let e=[{key:"fe",text:"__"},{key:"icon",text:"_a"},{key:"tool",text:"_b"},{key:"color",text:"_c"},{key:"fw",text:"_d"},{key:"plugin",text:"_e"},{key:"ux",text:"_f"}];export let List=e;export let ListMap=t.toMap(e,"key");
