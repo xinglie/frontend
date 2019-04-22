@@ -26,6 +26,7 @@ export default Magix.View.extend({
         });
     },
     '@{change.tab}<click>'(e) {
+        window.scrollTo(0, 0);
         Magix.Router.to('/nav/' + e.params.tab);
     }
 });
