@@ -1,5 +1,5 @@
-import Magix from '../lib/magix.js';
-import ZH from './zh-cn.js';
+import Magix from '../lib/magix';
+import ZH from './zh-cn';
 let I18n = {
     'zh-cn': ZH,
     zh: ZH

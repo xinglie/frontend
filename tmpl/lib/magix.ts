@@ -4,9 +4,8 @@ author:kooboy_li@163.com
 loader:module
 enables:router,mixins,rich
 
-optionals:service
+optionals:service,state,recast
 */
-
 if (typeof DEBUG == 'undefined') window.DEBUG = true;
 //VARS
 let Counter = 0;
@@ -44,20 +43,21 @@ let ToString = Object[Prototype].toString;
 let Type = o => ToString.call(o).slice(8, -1);
 let IsObject = o => Type(o) == 'Object';
 let IsArray = Array.isArray;
-let GUID = prefix => (prefix || 'mx_') + Counter++;
+let GUID = (prefix?) => (prefix || 'mx_') + Counter++;
 let GetById = id => Doc_Document.getElementById(id);
 let SetInnerHTML = (n, html) => n.innerHTML = html;
 let MxGlobalView = GUID();
 let Mx_Cfg = {
     rootId: GUID(),
     defaultView: MxGlobalView,
+    
     error(e) {
         throw e;
     }
 };
 let IsPrimitive = args => !args || typeof args != 'object';
 
-let NodeIn = (a, b, r) => {
+let NodeIn = (a, b, r?) => {
     if (a && b) {
         r = a == b;
         if (!r) {
@@ -100,7 +100,7 @@ let ApplyStyle = (key, css) => {
         }
     }
 };
-let ToTry = (fns, args, context, r, e) => {
+let ToTry = (fns, args?, context?, r?, e?) => {
     args = args || Empty_Array;
     if (!IsArray(fns)) fns = [fns];
     if (!IsArray(args)) args = [args];
@@ -132,22 +132,7 @@ let TranslateData = (data, params) => {
     return params;
 };
 let CacheSort = (a, b) => b['a'] - a['a'] || b['b'] - a['b'];
-/**
- * Magix.Cache 类
- * @name Cache
- * @constructor
- * @param {Integer} [max] 缓存最大值，默认20
- * @param {Integer} [buffer] 缓冲区大小，默认5
- * @param {Function} [remove] 当缓存的元素被删除时调用
- * @example
- * let c = new Magix.cache(5,2);//创建一个可缓存5个，且缓存区为2个的缓存对象
- * c.set('key1',{});//缓存
- * c.get('key1');//获取
- * c.del('key1');//删除
- * c.has('key1');//判断
- * //注意：缓存通常配合其它方法使用，在Magix中，对路径的解析等使用了缓存。在使用缓存优化性能时，可以达到节省CPU和内存的双赢效果
- */
-function Cache(max, buffer, remove, me) {
+function MxCache(max?: number, buffer?: number, remove?: (item: any) => void, me?: any) {
     me = this;
     me['a'] = [];
     me['b'] = buffer || 5; //buffer先取整，如果为0则再默认5
@@ -155,15 +140,7 @@ function Cache(max, buffer, remove, me) {
     me['d'] = remove;
 }
 
-Assign(Cache[Prototype], {
-    /**
-     * @lends Cache#
-     */
-    /**
-     * 获取缓存的值
-     * @param  {String} key
-     * @return {Object} 初始设置的缓存对象
-     */
+Assign(MxCache[Prototype], {
     get(key) {
         let me = this;
         let c = me['a'];
@@ -175,11 +152,6 @@ Assign(Cache[Prototype], {
         }
         return r;
     },
-    /**
-     * 设置缓存
-     * @param {String} key 缓存的key
-     * @param {Object} value 缓存的对象
-     */
     set(okey, value) {
         let me = this;
         let c = me['a'];
@@ -206,10 +178,6 @@ Assign(Cache[Prototype], {
         r['a'] = 1;
         r['b'] = Counter++;
     },
-    /**
-     * 删除缓存
-     * @param  {String} key 缓存key
-     */
     del(k) {
         k = Spliter + k;
         let c = this['a'];
@@ -224,11 +192,6 @@ Assign(Cache[Prototype], {
             }
         }
     },
-    /**
-     * 检测缓存中是否有给定的key
-     * @param  {String} key 缓存key
-     * @return {Boolean}
-     */
     has(k) {
         return Has(this['a'], Spliter + k);
     }
@@ -244,7 +207,7 @@ let DispatchEvent = (element, type, data) => {
     element.dispatchEvent(e);
 };
 let AttachEventHandlers = [];
-let AddEventListener = (element, type, fn, viewId, eventOptions, view) => {
+let AddEventListener = (element, type, fn, viewId?, eventOptions?, view?) => {
     let h = {
         'a': viewId,
         'b': fn,
@@ -261,7 +224,7 @@ let AddEventListener = (element, type, fn, viewId, eventOptions, view) => {
     AttachEventHandlers.push(h);
     element.addEventListener(type, h['e'], eventOptions);
 };
-let RemoveEventListener = (element, type, cb, viewId, eventOptions) => {
+let RemoveEventListener = (element, type, cb, viewId?, eventOptions?) => {
     for (let c, i = AttachEventHandlers.length; i--;) {
         c = AttachEventHandlers[i];
         if (c['c'] == type &&
@@ -275,15 +238,7 @@ let RemoveEventListener = (element, type, cb, viewId, eventOptions) => {
     }
 };
 
-let PathToObject = new Cache();
-/**
- * 把路径字符串转换成对象
- * @param  {String} path 路径字符串
- * @return {Object} 解析后的对象
- * @example
- * let obj = Magix.parseUri('/xxx/?a=b&c=d');
- * // obj = {path:'/xxx/',params:{a:'b',c:'d'}}
- */
+let PathToObject = new MxCache();
 let ParseUri = path => {
     //把形如 /xxx/?a=b&c=d 转换成对象 {path:'/xxx/',params:{a:'b',c:'d'}}
     //1. /xxx/a.b.c.html?a=b&c=d  path /xxx/a.b.c.html
@@ -317,27 +272,6 @@ let ParseUri = path => {
         params: Assign({}, r.b)
     };
 };
-/**
- * 转换成字符串路径
- * @param  {String} path 路径
- * @param {Object} params 参数对象
- * @param {Object} [keo] 保留空白值的对象
- * @return {String} 字符串路径
- * @example
- * let str = Magix.toUri('/xxx/',{a:'b',c:'d'});
- * // str == /xxx/?a=b&c=d
- *
- * let str = Magix.toUri('/xxx/',{a:'',c:2});
- *
- * // str == /xxx/?a=&c=2
- *
- * let str = Magix.toUri('/xxx/',{a:'',c:2},{c:1});
- *
- * // str == /xxx/?c=2
- * let str = Magix.toUri('/xxx/',{a:'',c:2},{a:1,c:1});
- *
- * // str == /xxx/?a=&c=2
- */
 let ToUri = (path, params, keo) => {
     let arr = [], v, p, f;
     for (p in params) {
@@ -361,8 +295,8 @@ let ToMap = (list, key) => {
     }
     return map;
 };
-let ParseExprCache = new Cache();
-let ParseExpr = (expr, data, result) => {
+let ParseExprCache = new MxCache();
+let ParseExpr = (expr, data, result?) => {
     if (ParseExprCache.has(expr)) {
         result = ParseExprCache.get(expr);
     } else {
@@ -379,7 +313,36 @@ let ParseExpr = (expr, data, result) => {
     }
     return result;
 };
+let CallIndex = 0;
+let CallList = [];
+let CallBreakTime = 28;
+let StartCall = () => {
+    let last = Date_Now(),
+        next;
+    while (1) {
+        next = CallList[CallIndex - 1];
+        if (next) {
+            next.apply(CallList[CallIndex], CallList[CallIndex + 1]);
+            CallIndex += 3;
+            if (Date_Now() - last > CallBreakTime) {
+                Timeout(StartCall);
+                break;
+            }
+        } else {
+            CallList.length = CallIndex = 0;
+            break;
+        }
+    }
+};
+let CallFunction = (fn, context, args?) => {
+    CallList.push(fn, context, args);
+    if (!CallIndex) {
+        CallIndex = 1;
+        Timeout(StartCall);
+    }
+};
 let MxDefaultViewEntity;
+let M_Ext = '.js';
 let Async_Require = (name, fn) => {
     if (name) {
         if (MxGlobalView == name) {
@@ -389,20 +352,8 @@ let Async_Require = (name, fn) => {
             fn(MxDefaultViewEntity);
         } else {
             if (!IsArray(name)) name = [name];
-            let a = [], c = 0;
-            let count = name.length,
-                paths = Mx_Cfg.paths,
-                check = i => {
-                    return v => {
-                        a[i] = v.default;
-                        c++;
-                        if (c == count) {
-                            fn(...a);
-                        }
-                    };
-                };
-            for (let i = count, f, s, p; i--;) {
-                f = name[i];
+            let a = [], b = [], paths = Mx_Cfg.paths, f, s, p;
+            for (f of name) {
                 s = f.indexOf('/');
                 if (s > -1 && !f.startsWith('.')) {
                     p = f.slice(0, s);
@@ -413,18 +364,24 @@ let Async_Require = (name, fn) => {
                         f = paths[p] + f;
                     }
                 }
-                if (!f.endsWith('.js')) {
-                    f += '.js';
+                if (!f.endsWith(M_Ext)) {
+                    f += M_Ext;
                 }
-                import(f).then(check(i));
+                a.push(import(f));
             }
+            Promise.all(a).then(args => {
+                for (f of args) {
+                    b.push(f.default);
+                }
+                fn(...b);
+            });
         }
     } else {
         fn();
     }
 };
 function T() { }
-let Extend = (ctor, base, props, statics, cProto) => {
+let Extend = (ctor, base, props, statics, cProto?: any) => {
     //bProto.constructor = base;
     T[Prototype] = base[Prototype];
     cProto = new T();
@@ -485,21 +442,8 @@ if (DEBUG && window.Proxy) {
         return build('', data);
     };
 }
-/**
- * 多播事件对象
- * @name Event
- * @namespace
- */
+
 let MxEvent = {
-    /**
-     * @lends MEvent
-     */
-    /**
-     * 触发事件
-     * @param {String} name 事件名称
-     * @param {Object} data 事件对象
-     * @param {Boolean} [remove] 事件触发完成后是否移除这个事件的所有监听
-     */
     fire(name, data) {
         let key = Spliter + name,
             me = this,
@@ -524,23 +468,6 @@ let MxEvent = {
         if (list) ToTry(list, data, me);
         return me;
     },
-    /**
-     * 绑定事件
-     * @param {String} name 事件名称
-     * @param {Function} fn 事件处理函数
-     * @example
-     * let T = Magix.mix({},Magix.Event);
-     * T.on('done',function(e){
-     *     alert(1);
-     * });
-     * T.on('done',function(e){
-     *     alert(2);
-     *     T.off('done',arguments.callee);
-     * });
-
-     * T.fire('done',{data:'test'});
-     * T.fire('done',{data:'test2'});
-     */
     on(name, f) {
         let me = this;
         let key = Spliter + name;
@@ -550,11 +477,6 @@ let MxEvent = {
         });
         return me;
     },
-    /**
-     * 解除事件绑定
-     * @param {String} name 事件名称
-     * @param {Function} [fn] 事件处理函数
-     */
     off(name, fn) {
         let key = Spliter + name,
             me = this,
@@ -582,8 +504,8 @@ let Changed = 'changed';
 let Change = 'change';
 let Page_Unload = 'pageunload';
 let Router_VIEW = 'view';
-let Router_HrefCache = new Cache();
-let Router_ChgdCache = new Cache();
+let Router_HrefCache = new MxCache();
+let Router_ChgdCache = new MxCache();
 let Router_WinLoc = location;
 let Router_LastChanged;
 let Router_Silent = 0;
@@ -593,18 +515,18 @@ let Router_LLoc = {
     href: Empty
 };
 let Router_TrimHashReg = /(?:^.*\/\/[^\/]+|#.*$)/gi;
-let Router_TrimQueryReg = /^[^#]*#?!?/;
+let Router_TrimQueryReg = /^[^#]*#?/;
 function GetParam(key, defaultValue) {
     return this[Params][key] || defaultValue !== Undefined && defaultValue || Empty;
 }
 //let Router_Edge = 0;
-let Router_Hashbang = Hash_Key + '!';
-let Router_UpdateHash = (path, replace) => {
-    path = Router_Hashbang + path;
-    if (replace) {
-        Router_WinLoc.replace(path);
-    } else {
-        Router_WinLoc.hash = path;
+let Router_UpdateHash = (path, replace?) => {
+    if (path != Router_WinLoc.hash) {
+        if (replace) {
+            Router_WinLoc.replace(Hash_Key + path);
+        } else {
+            Router_WinLoc.hash = path;
+        }
     }
 };
 let Router_Update = (path, params, loc, replace, silent, lQuery) => {
@@ -664,7 +586,7 @@ let Router_PNR_Routers, Router_PNR_UnmatchView,
     Router_PNR_DefaultView, Router_PNR_DefaultPath;
 
 let Router_PNR_Rewrite;
-let Router_AttachViewAndPath = (loc, view) => {
+let Router_AttachViewAndPath = (loc, view?) => {
     if (!Router_PNR_Routers) {
         Router_PNR_Routers = Mx_Cfg.routes || {};
         Router_PNR_UnmatchView = Mx_Cfg.unmatchView;
@@ -738,7 +660,7 @@ let Router_GetChged = (oldLocation, newLocation) => {
     }
     return result;
 };
-let Router_Parse = href => {
+let Router_Parse = (href?) => {
     href = href || Router_WinLoc.href;
 
     let result = Router_HrefCache.get(href),
@@ -788,64 +710,9 @@ let Router_Diff = () => {
     }
     return Router_LastChanged;
 };
-/**
- * 路由对象，操作URL
- * @name Router
- * @namespace
- * @borrows Event.on as on
- * @borrows Event.fire as fire
- * @borrows Event.off as off
- * @beta
- * @module router
- */
 let Router = Assign({
-    /**
-     * @lends Router
-     */
-    /**
-     * 解析href的query和hash，默认href为location.href
-     * @param {String} [href] href
-     * @return {Object} 解析的对象
-     */
     parse: Router_Parse,
-    /**
-     * 根据location.href路由并派发相应的事件,同时返回当前href与上一个href差异对象
-     * @example
-     * let diff = Magix.Router.diff();
-     * if(diff.params.page || diff.params.rows){
-     *     console.log('page or rows changed');
-     * }
-     */
     diff: Router_Diff,
-    /**
-     * 导航到新的地址
-     * @param  {Object|String} pn path或参数字符串或参数对象
-     * @param {String|Object} [params] 参数对象
-     * @param {Boolean} [replace] 是否替换当前历史记录
-     * @example
-     * let R = Magix.Router;
-     * R.to('/list?page=2&rows=20');//改变path和相关的参数，地址栏上的其它参数会进行丢弃，不会保留
-     * R.to('page=2&rows=20');//只修改参数，地址栏上的其它参数会保留
-     * R.to({//通过对象修改参数，地址栏上的其它参数会保留
-     *     page:2,
-     *     rows:20
-     * });
-     * R.to('/list',{//改变path和相关参数，丢弃地址栏上原有的其它参数
-     *     page:2,
-     *     rows:20
-     * });
-     *
-     * //凡是带path的修改地址栏，都会把原来地址栏中的参数丢弃
-     * 传递对象，内部对value会进行encodeURIComponent操作，传递字符串需要开发者自己处理。
-     * R.to({
-     *  page:2,
-     *  rows:20
-     * },null,true);//使用location.replace操作hash
-     * R.to({
-     *  page:2,
-     *  rows:20
-     * },null,null,true);//静默更新url但不派发事件
-     */
     to(pn, params, replace, silent) {
         if (!params && IsObject(pn)) {
             params = pn;
@@ -898,7 +765,7 @@ let View_IsObserveChanged = view => {
  * @param {Vframe} vframe vframe对象
  * @private
  */
-let Dispatcher_Update = (vframe, view, cs, c) => {
+let Dispatcher_Update = (vframe, view?, cs?, c?) => {
     if (vframe && vframe['a'] != Dispatcher_UpdateTag &&
         (view = vframe['b']) &&
         view['b'] > 1) {
@@ -911,13 +778,8 @@ let Dispatcher_Update = (vframe, view, cs, c) => {
         }
     }
 };
-/**
- * 向vframe通知地址栏发生变化
- * @param {Object} e 事件对象
- * @param {Object} e.location window.location.href解析出来的对象
- * @private
- */
 let Dispatcher_NotifyChange = (e, vf, view) => {
+    
     vf = Vframe_Root();
     if ((view = e[Router_VIEW])) {
         vf.mountView(view.to);
@@ -929,18 +791,13 @@ let Dispatcher_NotifyChange = (e, vf, view) => {
 
 let Vframe_RootVframe;
 let Vframe_Vframes = {};
-let Vframe_TranslateQuery = (pId, src, params, pVf) => {
+let Vframe_TranslateQuery = (pId, src, params, pVf?) => {
     if (src.indexOf(Spliter) > 0 &&
         (pVf = Vframe_Vframes[pId])) {
         TranslateData(pVf['b']['d'], params);
     }
 };
-/**
- * 获取根vframe;
- * @return {Vframe}
- * @private
- */
-let Vframe_Root = (rootId, e) => {
+let Vframe_Root = (rootId?, e?) => {
     if (!Vframe_RootVframe) {
         rootId = Mx_Cfg.rootId;
         e = GetById(rootId);
@@ -966,7 +823,7 @@ let Vframe_AddVframe = (id, vframe) => {
         
     }
 };
-let Vframe_RemoveVframe = (id, vframe) => {
+let Vframe_RemoveVframe = (id, vframe?) => {
     vframe = Vframe_Vframes[id];
     if (vframe) {
         delete Vframe_Vframes[id];
@@ -999,13 +856,7 @@ let Vframe_RunInvokes = (vf, list, o) => {
 
 
 let Vframe_GetVfId = node => node['b'] || (node['b'] = GUID());
-/**
- * Vframe类
- * @name Vframe
- * @class
- * @constructor
- */
-function Vframe(root, pId) {
+function Vframe(root, pId?) {
     let me = this;
     let vfId = Vframe_GetVfId(root);
     me.id = vfId;
@@ -1018,38 +869,18 @@ function Vframe(root, pId) {
     Vframe_AddVframe(vfId, me);
 }
 Assign(Vframe, {
-    /**
-     * @lends Vframe
-     */
-    /**
-     * 获取所有的vframe对象
-     * @return {Object}
-     */
     all() {
         return Vframe_Vframes;
     },
     byId(id) {
         return Vframe_Vframes[id];
     },
-    /**
-     * 根据vframe的id获取vframe对象
-     * @param {String} id vframe的id
-     * @return {Vframe|undefined} vframe对象
-     */
     byNode(node) {
         return Vframe_Vframes[node['b']];
     }
 }, MxEvent);
 
 Assign(Vframe[Prototype], {
-    /**
-     * @lends Vframe#
-     */
-    /**
-     * 加载对应的view
-     * @param {String} viewPath 形如:app/views/home?type=1&page=2 这样的view路径
-     * @param {Object|Null} [viewInitParams] 调用view的init方法时传递的参数
-     */
     mountView(viewPath, viewInitParams /*,keepPreHTML*/) {
         let me = this;
         let { id, root, pId } = me;
@@ -1143,21 +974,6 @@ Assign(Vframe[Prototype], {
         }
         me['e']++; //增加signature，阻止相应的回调，见mountView
     },
-    /**
-     * 加载vframe
-     * @param  {String} id             节点id
-     * @param  {String} viewPath       view路径
-     * @param  {Object} [viewInitParams] 传递给view init方法的参数
-     * @return {Vframe} vframe对象
-     * @example
-     * // html
-     * // &lt;div id="magix_vf_defer"&gt;&lt;/div&gt;
-     *
-     *
-     * //js
-     * view.owner.mountVframe('magix_vf_defer','app/views/list',{page:2})
-     * //注意：动态向某个节点渲染view时，该节点无须是vframe标签
-     */
     mountVframe(node, viewPath, viewInitParams) {
         let me = this,
             vf, id = me.id, c = me['c'];
@@ -1173,17 +989,6 @@ Assign(Vframe[Prototype], {
         vf.mountView(viewPath, viewInitParams);
         return vf;
     },
-    /**
-     * 加载某个区域下的view
-     * @param {HTMLElement|String} zoneId 节点对象或id
-     * @example
-     * // html
-     * // &lt;div id="zone"&gt;
-     * //   &lt;div mx-view="path/to/v1"&gt;&lt;/div&gt;
-     * // &lt;/div&gt;
-     *
-     * view.onwer.mountZone('zone');//即可完成zone节点下的view渲染
-     */
     mountZone(zone) {
         let me = this, it;
         zone = zone || me.root;
@@ -1214,10 +1019,6 @@ Assign(Vframe[Prototype], {
         }
         //me['j'] = 0;
     },
-    /**
-     * 销毁vframe
-     * @param  {String} [id]      节点id
-     */
     unmountVframe(node, isVframeId) { //inner 标识是否是由内部调用，外部不应该传递该参数
         let me = this,
             vf, pId;
@@ -1234,10 +1035,6 @@ Assign(Vframe[Prototype], {
             }
         }
     },
-    /**
-     * 销毁某个区域下面的所有子vframes
-     * @param {HTMLElement|String} [zoneId] 节点对象或id
-     */
     unmountZone(root) {
         let me = this;
         let p, vf, unmount;
@@ -1254,13 +1051,6 @@ Assign(Vframe[Prototype], {
         }
     }
     ,
-    /**
-     * 获取父vframe
-     * @param  {Integer} [level] 向上查找层级，默认1,取当前vframe的父级
-     * @return {Vframe|undefined}
-     * @beta
-     * @module linkage
-     */
     parent(level, vf) {
         vf = this;
         level = (level >>> 0) || 1;
@@ -1269,32 +1059,10 @@ Assign(Vframe[Prototype], {
         }
         return vf;
     },
-    /**
-     * 获取当前vframe的所有子vframe的id。返回数组中，vframe在数组中的位置并不固定
-     * @return {Array[String]}
-     * @beta
-     * @module linkage
-     * @example
-     * let children = view.owner.children();
-     * console.log(children);
-     */
     children(me) {
         me = this;
         return me['i'] || (me['i'] = Keys(me['c']));
     },
-    /**
-     * 调用view的方法
-     * @param  {String} name 方法名
-     * @param  {Array} [args] 参数
-     * @return {Object}
-     * @beta
-     * @module linkage
-     * @example
-     * // html
-     * // &lt;div&gt; mx-view="path/to/v1" id="test"&gt;&lt;/div&gt;
-     * let vf = Magix.Vframe.get('test');
-     * vf.invoke('methodName',['args1','agrs2']);
-     */
     invoke(name, args) {
         let result;
         let vf = this,
@@ -1364,7 +1132,7 @@ Assign(Vframe[Prototype], {
         }
     }
  */
-let Body_EvtInfoCache = new Cache(30, 10);
+let Body_EvtInfoCache = new MxCache(30, 10);
 let Body_EvtInfoReg = /(?:([\w\-]+)\x1e)?([^(]+)\(([\s\S]*)?\)/;
 let Body_RootEvents = {};
 let Body_SearchSelectorEvents = {};
@@ -1604,7 +1372,7 @@ let Updater_Digest = (view, digesting) => {
         ref = { 'a': [] },
         tmpl, vdom, data = view['f'],
         refData = view['d'],
-        redigest = trigger => {
+        redigest = (trigger?) => {
             if (digesting['a'] < digesting.length) {
                 Updater_Digest(view, digesting);
             } else {
@@ -1780,9 +1548,6 @@ if (DEBUG) {
 }
 
 let V_TEXT_NODE = Counter;
-if (DEBUG) {
-    V_TEXT_NODE = '#text';
-}
 let V_W3C = 'http://www.w3.org/';
 let V_NSMap = {
     svg: `${V_W3C}2000/svg`,
@@ -2084,24 +1849,10 @@ let V_SetNode = (realNode, oldParent, lastVDOM, newVDOM, ref, vframe, keys) => {
     }
 };
 
-let State_Data = {};
-let State = Assign({
-    get(key) {
-        return key ? State_Data[key] : State_Data;
-    },
-    /**
-     * 设置数据
-     * @param {Object} data 数据对象
-     */
-    set(data) {
-        Assign(State_Data, data);
-    }
-}, MxEvent);
-
 //like 'login<click>' or '$<click>' or '$win<scroll>' or '$win<scroll>&passive,capture'
 let View_EvtMethodReg = /^(\$?)([^<]*)<([^>]+)>(?:&(.+))?$/;
 
-let processMixinsSameEvent = (exist, additional, temp) => {
+let processMixinsSameEvent = (exist, additional, temp?) => {
     if (exist['a']) {
         temp = exist;
     } else {
@@ -2115,7 +1866,7 @@ let processMixinsSameEvent = (exist, additional, temp) => {
     return temp;
 };
 
-let View_WrapMethod = (prop, fName, short, fn, me) => {
+let View_WrapMethod = (prop, fName, short, fn?, me?) => {
     fn = prop[fName];
     prop[fName] = prop[short] = function (...args) {
         me = this;
@@ -2205,11 +1956,6 @@ function extend(props, statics) {
     NView.extend = extend;
     return Extend(NView, me, props, statics);
 }
-/**
- * 预处理view
- * @param  {View} oView view子类
- * @param  {Vom} vom vom
- */
 let View_Prepare = oView => {
     if (!oView[Spliter]) { //只处理一次
         
@@ -2291,43 +2037,6 @@ let View_Prepare = oView => {
     
 };
 
-/**
- * View类
- * @name View
- * @class
- * @constructor
- * @borrows Event.on as #on
- * @borrows Event.fire as #fire
- * @borrows Event.off as #off
- * @param {Object} ops 创建view时，需要附加到view对象上的其它属性
- * @property {String} id 当前view与页面vframe节点对应的id
- * @property {Vframe} owner 拥有当前view的vframe对象
- * @example
- * // 关于事件:
- * // html写法：
- *
- * //  &lt;input type="button" mx-click="test({id:100,name:'xinglie'})" value="test" /&gt;
- * //  &lt;a href="http://etao.com" mx-click="test({com:'etao.com'})"&gt;http://etao.com&lt;/a&gt;
- *
- * // js写法：
- *
- *     'test&lt;click&gt;':function(e){
- *          e.preventDefault();
- *          //e.current 处理事件的dom节点(即带有mx-click属性的节点)
- *          //e.target 触发事件的dom节点(即鼠标点中的节点，在current里包含其它节点时，current与target有可能不一样)
- *          //e.params  传递的参数
- *          //e.params.com,e.params.id,e.params.name
- *      },
- *      'test&lt;mousedown&gt;':function(e){
- *
- *       }
- *
- *  //上述示例对test方法标注了click与mousedown事件，也可以合写成：
- *  'test&lt;click,mousedown&gt;':function(e){
- *      alert(e.type);//可通过type识别是哪种事件类型
- *  }
- */
-
 
 function View(id, root, owner, ops, me) {
     me = this;
@@ -2353,113 +2062,15 @@ function View(id, root, owner, ops, me) {
     
 }
 Assign(View, {
-    /**
-     * @lends View
-     */
-    /**
-     * 扩展View
-     * @param  {Object} props 扩展到原型上的方法
-     * @example
-     * define('app/tview',function(require){
-     *     let Magix = require('magix');
-     *     Magix.View.merge({
-     *         ctor:function(){
-     *             this.$attr='test';
-     *         },
-     *         test:function(){
-     *             alert(this.$attr);
-     *         }
-     *     });
-     * });
-     * //加入Magix.config的exts中
-     *
-     *  Magix.config({
-     *      //...
-     *      exts:['app/tview']
-     *
-     *  });
-     *
-     * //这样完成后，所有的view对象都会有一个$attr属性和test方法
-     * //当然上述功能也可以用继承实现，但继承层次太多时，可以考虑使用扩展来消除多层次的继承
-     * //同时当项目进行中发现所有view要实现某个功能时，该方式比继承更快捷有效
-     *
-     *
-     */
     
     merge,
     
-    /**
-     * 继承
-     * @param  {Object} [props] 原型链上的方法或属性对象
-     * @param {Function} [props.ctor] 类似constructor，但不是constructor，当我们继承时，你无需显示调用上一层级的ctor方法，magix会自动帮你调用
-     * @param {Array} [props.mixins] mix到当前原型链上的方法对象，该对象可以有一个ctor方法用于初始化
-     * @param  {Object} [statics] 静态对象或方法
-     * @example
-     * let Magix = require('magix');
-     * let Sortable = {
-     *     ctor: function() {
-     *         console.log('sortable ctor');
-     *         //this==当前mix Sortable的view对象
-     *         this.on('destroy', function() {
-     *             console.log('dispose')
-     *         });
-     *     },
-     *     sort: function() {
-     *         console.log('sort');
-     *     }
-     * };
-     * module.exports = Magix.View.extend({
-     *     mixins: [Sortable],
-     *     ctor: function() {
-     *         console.log('view ctor');
-     *     },
-     *     render: function() {
-     *         this.sort();
-     *     }
-     * });
-     */
     extend
 });
 Assign(View[Prototype], MxEvent, {
-    /**
-     * @lends View#
-     */
-    /**
-     * 初始化调用的方法
-     * @beta
-     * @module viewInit
-     * @param {Object} extra 外部传递的数据对象
-     */
     init: Noop,
-    /**
-     * 渲染view，供最终view开发者覆盖
-     * @function
-     */
     render: Noop,
-    /*
-     * 包装mx-event事件，比如把mx-click="test<prevent>({key:'field'})" 包装成 mx-click="magix_vf_root^test<prevent>({key:'field})"，以方便识别交由哪个view处理
-     * @function
-     * @param {String} html 处理的代码片断
-     * @param {Boolean} [onlyAddPrefix] 是否只添加前缀
-     * @return {String} 处理后的字符串
-     * @example
-     * View.extend({
-     *     'del&lt;click&gt;':function(e){
-     *         S.one(HashKey+e.currentId).remove();
-     *     },
-     *     'addNode&lt;click&gt;':function(e){
-     *         let tmpl='&lt;div mx-click="del"&gt;delete&lt;/div&gt;';
-     *         //因为tmpl中有mx-click，因此需要下面这行代码进行处理一次
-     *         tmpl=this.wrapEvent(tmpl);
-     *         S.one(HashKey+e.currentId).append(tmpl);
-     *     }
-     * });
-     */
     
-    /**
-     * 通知当前view结束html的更新
-     * @param {String} [id] 哪块区域结束更新，默认整个view
-     */
     endUpdate(node, me, o, f) {
         me = this;
         if (me['b'] > 0) {
@@ -2476,23 +2087,6 @@ Assign(View[Prototype], MxEvent, {
             
         }
     },
-    /**
-     * 包装异步回调
-     * @param  {Function} fn 异步回调的function
-     * @return {Function}
-     * @example
-     * render:function(){
-     *     setTimeout(this.wrapAsync(function(){
-     *         //codes
-     *     }),50000);
-     * }
-     * // 为什么要包装一次？
-     * // 在单页应用的情况下，可能异步回调执行时，当前view已经被销毁。
-     * // 比如上例中的setTimeout，50s后执行回调，如果你的回调中去操作了DOM，
-     * // 则会出错，为了避免这种情况的出现，可以调用view的wrapAsync包装一次。
-     * // (该示例中最好的做法是在view销毁时清除setTimeout，
-     * // 但有时候你很难控制回调的执行，比如JSONP，所以最好包装一次)
-     */
     wrapAsync(fn, context) {
         let me = this;
         let sign = me['b'];
@@ -2503,22 +2097,6 @@ Assign(View[Prototype], MxEvent, {
         };
     },
     
-    /**
-     * 离开提示
-     * @param  {String} msg 提示消息
-     * @param  {Function} fn 是否提示的回调
-     * @beta
-     * @module tipRouter
-     * @example
-     * let Magix = require('magix');
-     * module.exports = Magix.View.extend({
-     *     init:function(){
-     *         this.leaveTip('页面数据未保存，确认离开吗？',function(){
-     *             return true;//true提示，false，不提示
-     *         });
-     *     }
-     * });
-     */
     leaveTip(msg, fn) {
         let me = this;
         let changeListener = e => {
@@ -2556,33 +2134,6 @@ Assign(View[Prototype], MxEvent, {
             Router.off(Page_Unload, unloadListener);
         });
     },
-    /**
-     * 监视地址栏中的参数或path，有变动时，才调用当前view的render方法。通常情况下location有变化不会引起当前view的render被调用，所以你需要指定地址栏中哪些参数有变化时才引起render调用，使得view只关注与自已需要刷新有关的参数
-     * @param {Array|String|Object} params  数组字符串
-     * @param {Boolean} [isObservePath] 是否监视path
-     * @beta
-     * @module router
-     * @example
-     * return View.extend({
-     *      init:function(){
-     *          this.observeLocation('page,rows');//关注地址栏中的page rows2个参数的变化，当其中的任意一个改变时，才引起当前view的render被调用
-     *          this.observeLocation(null,true);//关注path的变化
-     *          //也可以写成下面的形式
-     *          //this.observeLocation('page,rows',true);
-     *          //也可以是对象的形式
-     *          this.observeLocation({
-     *              path: true,
-     *              params:['page','rows']
-     *          });
-     *      },
-     *      render:function(){
-     *          let loc=Magix.Router.parse();
-     *          console.log(loc);//获取地址解析出的对象
-     *          let diff=Magix.Router.diff();
-     *          console.log(diff);//获取当前地址与上一个地址差异对象
-     *      }
-     * });
-     */
     observeLocation(params, isObservePath) {
         let me = this,
             loc;
@@ -2598,37 +2149,6 @@ Assign(View[Prototype], MxEvent, {
         }
     },
     
-    /**
-     * 设置view的html内容
-     * @param {String} id 更新节点的id
-     * @param {Strig} html html字符串
-     * @example
-     * render:function(){
-     *     this.setHTML(this.id,this.tmpl);//渲染界面，当界面复杂时，请考虑用其它方案进行更新
-     * }
-     */
-    /*
-        Q:为什么删除setHTML?
-        A:统一使用updater更新界面。
-        关于api的分级，高层api更内聚，一个api完成很多功能。方便开发者，但不灵活。
-        底层api职责更单一，一个api只完成一个功能，灵活，但不方便开发者
-        更新界面来讲，updater是一个高层api，但是有些功能却无法完成，如把view当成壳子或容器渲染第三方的组件，组件什么时间加载完成、渲染、更新了dom、如何通知magix等，这些问题在updater中是无解的，而setHTML这个api又不够底层，同样也无法完成一些功能，所以这个api食之无味，故删除
-     */
-    /**
-     * 获取放入的数据
-     * @param  {String} [key] key
-     * @return {Object} 返回对应的数据，当key未传递时，返回整个数据对象
-     * @example
-     * render: function() {
-     *     this.set({
-     *         a: 10,
-     *         b: 20
-     *     });
-     * },
-     * 'read&lt;click&gt;': function() {
-     *     console.log(this.get('a'));
-     * }
-     */
     get(key, result) {
         result = this['f'];
         if (key) {
@@ -2636,36 +2156,6 @@ Assign(View[Prototype], MxEvent, {
         }
         return result;
     },
-    /**
-     * 通过path获取值
-     * @param  {String} path 点分割的路径
-     * @return {Object}
-     */
-    /*gain: function (path) {
-        let result = this.$d;
-        let ps = path.split('.'),
-            temp;
-        while (result && ps.length) {
-            temp = ps.shift();
-            result = result[temp];
-        }
-        return result;
-    },*/
-    /**
-     * 获取放入的数据
-     * @param  {Object} obj 待放入的数据
-     * @return {Updater} 返回updater
-     * @example
-     * render: function() {
-     *     this.set({
-     *         a: 10,
-     *         b: 20
-     *     });
-     * },
-     * 'read&lt;click&gt;': function() {
-     *     console.log(this.get('a'));
-     * }
-     */
     set(newData, unchanged) {
         let me = this,
             oldData = me['f'],
@@ -2684,16 +2174,6 @@ Assign(View[Prototype], MxEvent, {
         me['k'] = changed;
         return me;
     },
-    /**
-     * 检测数据变化，更新界面，放入数据后需要显式调用该方法才可以把数据更新到界面
-     * @example
-     * render: function() {
-     *     this.updater.set({
-     *         a: 10,
-     *         b: 20
-     *     }).digest();
-     * }
-     */
     digest(data, unchanged, resolve) {
         let me = this.set(data, unchanged),
             digesting = me['g'];
@@ -2722,121 +2202,32 @@ Assign(View[Prototype], MxEvent, {
         }
     }
     ,
-    /**
-     * 获取当前数据状态的快照，配合altered方法可获得数据是否有变化
-     * @return {Updater} 返回updater
-     * @example
-     * render: function() {
-     *     this.updater.set({
-     *         a: 20,
-     *         b: 30
-     *     }).digest().snapshot(); //更新完界面后保存快照
-     * },
-     * 'save&lt;click&gt;': function() {
-     *     //save to server
-     *     console.log(this.updater.altered()); //false
-     *     this.updater.set({
-     *         a: 20,
-     *         b: 40
-     *     });
-     *     console.log(this.updater.altered()); //true
-     *     this.updater.snapshot(); //再保存一次快照
-     *     console.log(this.updater.altered()); //false
-     * }
-     */
     snapshot() {
         let me = this;
         me['p'] = JSON_Stringify(me['f']);
         return me;
     },
-    /**
-     * 检测数据是否有变动
-     * @return {Boolean} 是否变动
-     * @example
-     * render: function() {
-     *     this.updater.set({
-     *         a: 20,
-     *         b: 30
-     *     }).digest().snapshot(); //更新完界面后保存快照
-     * },
-     * 'save&lt;click&gt;': function() {
-     *     //save to server
-     *     console.log(this.updater.altered()); //false
-     *     this.updater.set({
-     *         a: 20,
-     *         b: 40
-     *     });
-     *     console.log(this.updater.altered()); //true
-     *     this.updater.snapshot(); //再保存一次快照
-     *     console.log(this.updater.altered()); //false
-     * }
-     */
     altered() {
         let me = this;
         if (me['p']) {
             return me['p'] != JSON_Stringify(me['f']);
         }
     },
-    /**
-     * 翻译带@占位符的数据
-     * @param {string} data 源对象
-     */
     translate(data) {
         return TranslateData(this['f'], data);
     },
-    /**
-     * 翻译带@占位符的数据
-     * @param {string} origin 源字符串
-     */
     parse(origin) {
         return ParseExpr(origin, this['d']);
     }
     
 });
 
+declare var DEBUG: boolean;
+
 
 let Magix_Booted = 0;
 
-/**
- * Magix对象，提供常用方法
- * @name Magix
- * @namespace
- */
 let Magix = {
-    /**
-     * @lends Magix
-     */
-    /**
-     * 设置或获取配置信息
-     * @param  {Object} cfg 初始化配置参数对象
-     * @param {String} cfg.defaultView 默认加载的view
-     * @param {String} cfg.defaultPath 当无法从地址栏取到path时的默认值。比如使用hash保存路由信息，而初始进入时并没有hash,此时defaultPath会起作用
-     * @param {Object} cfg.routes path与view映射关系表
-     * @param {String} cfg.unmatchView 在routes里找不到匹配时使用的view，比如显示404
-     * @param {String} cfg.rootId 根view的id
-     * @param {Function} cfg.error 发布版以try catch执行一些用户重写的核心流程，当出错时，允许开发者通过该配置项进行捕获。注意：您不应该在该方法内再次抛出任何错误！
-     * @example
-     * Magix.config({
-     *      rootId:'J_app_main',
-     *      defaultView:'app/views/layouts/default',//默认加载的view
-     *      defaultPath:'/home',
-     *      routes:{
-     *          "/home":"app/views/layouts/default"
-     *      }
-     * });
-     *
-     *
-     * let config = Magix.config();
-     *
-     * console.log(config.rootId);
-     *
-     * // 可以多次调用该方法，除内置的配置项外，您也可以缓存一些数据，如
-     * Magix.config({
-     *     user:'彳刂'
-     * });
-     *
-     * console.log(Magix.config('user'));
-     */
     config(cfg, r) {
         r = Mx_Cfg;
         if (cfg) {
@@ -2848,18 +2239,6 @@ let Magix = {
         }
         return r;
     },
-
-    /**
-     * 应用初始化入口
-     * @function
-     * @param {Object} [cfg] 配置信息对象,更多信息请参考Magix.config方法
-     * @return {Object} 配置信息对象
-     * @example
-     * Magix.boot({
-     *      rootId:'J_app_main'
-     * });
-     *
-     */
     boot(cfg) {
         Assign(Mx_Cfg, cfg); //先放到配置信息中，供ini文件中使用
         
@@ -2868,183 +2247,23 @@ let Magix = {
         Router_Bind();
         
     },
-    /**
-     * 把列表转化成hash对象
-     * @param  {Array} list 源数组
-     * @param  {String} [key]  以数组中对象的哪个key的value做为hash的key
-     * @return {Object}
-     * @example
-     * let map = Magix.toMap([1,2,3,5,6]);
-     * //=> {1:1,2:1,3:1,4:1,5:1,6:1}
-     *
-     * let map = Magix.toMap([{id:20},{id:30},{id:40}],'id');
-     * //=>{20:{id:20},30:{id:30},40:{id:40}}
-     *
-     * console.log(map['30']);//=> {id:30}
-     * //转成对象后不需要每次都遍历数组查询
-     */
-
     toMap: ToMap,
-    /**
-     * 以try cache方式执行方法，忽略掉任何异常
-     * @function
-     * @param  {Array} fns     函数数组
-     * @param  {Array} [args]    参数数组
-     * @param  {Object} [context] 在待执行的方法内部，this的指向
-     * @return {Object} 返回执行的最后一个方法的返回值
-     * @example
-     * let result = Magix.toTry(function(){
-     *     return true
-     * });
-     *
-     * // result == true
-     *
-     * let result = Magix.toTry(function(){
-     *     throw new Error('test');
-     * });
-     *
-     * // result == undefined
-     *
-     * let result = Magix.toTry([function(){
-     *     throw new Error('test');
-     * },function(){
-     *     return true;
-     * }]);
-     *
-     * // result == true
-     *
-     * //异常的方法执行时，可以通过Magix.config中的error来捕获，如
-     *
-     * Magix.config({
-     *     error:function(e){
-     *         console.log(e);//在这里可以进行错误上报
-     *     }
-     * });
-     *
-     * let result = Magix.toTry(function(a1,a2){
-     *     return a1 + a2;
-     * },[1,2]);
-     *
-     * // result == 3
-     * let o={
-     *     title:'test'
-     * };
-     * let result = Magix.toTry(function(){
-     *     return this.title;
-     * },null,o);
-     *
-     * // result == 'test'
-     */
     toTry: ToTry,
-    /**
-     * 转换成字符串路径
-     * @function
-     * @param  {String} path 路径
-     * @param {Object} params 参数对象
-     * @param {Object} [keo] 保留空白值的对象
-     * @return {String} 字符串路径
-     * @example
-     * let str = Magix.toUrl('/xxx/',{a:'b',c:'d'});
-     * // str == /xxx/?a=b&c=d
-     *
-     * let str = Magix.toUrl('/xxx/',{a:'',c:2});
-     *
-     * // str==/xxx/?a=&c=2
-     *
-     * let str = Magix.toUrl('/xxx/',{a:'',c:2},{c:1});
-     *
-     * // str == /xxx/?c=2
-     * let str = Magix.toUrl('/xxx/',{a:'',c:2},{a:1,c:1});
-     *
-     * // str == /xxx/?a=&c=2
-     */
     toUrl: ToUri,
-    /**
-     * 把路径字符串转换成对象
-     * @function
-     * @param  {String} path 路径字符串
-     * @return {Object} 解析后的对象
-     * @example
-     * let obj = Magix.parseUrl('/xxx/?a=b&c=d');
-     * // obj = {path:'/xxx/',params:{a:'b',c:'d'}}
-     */
     parseUrl: ParseUri,
     guid: GUID,
     guard: Safeguard,
-    State,
     use: Async_Require,
     dispatch: DispatchEvent,
     
     type: Type,
-    /**
-     * 检测某个对象是否拥有某个属性
-     * @function
-     * @param  {Object}  owner 检测对象
-     * @param  {String}  prop  属性
-     * @example
-     * let obj={
-     *     key1:undefined,
-     *     key2:0
-     * }
-     *
-     * Magix.has(obj,'key1');//true
-     * Magix.has(obj,'key2');//true
-     * Magix.has(obj,'key3');//false
-     *
-     *
-     * @return {Boolean} 是否拥有prop属性
-     */
     has: Has,
-    /**
-     * 判断一个节点是否在另外一个节点内，如果比较的2个节点是同一个节点，也返回true
-     * @function
-     * @param {String|HTMLElement} node节点或节点id
-     * @param {String|HTMLElement} container 容器
-     * @example
-     * let root = $('html');
-     * let body = $('body');
-     *
-     * let r = Magix.inside(body[0],root[0]);
-     *
-     * // r == true
-     *
-     * let r = Magix.inside(root[0],body[0]);
-     *
-     * // r == false
-     *
-     * let r = Magix.inside(root[0],root[0]);
-     *
-     * // r == true
-     *
-     * @return {Boolean}
-     */
     inside: NodeIn,
-    /**
-     * 应用样式
-     * @beta
-     * @module style
-     * @param {String} prefix 样式的名称前缀
-     * @param {String} css 样式字符串
-     * @example
-     * // 该方法配合magix-combine工具使用
-     * // 更多信息可参考magix-combine工具：https://github.com/thx/magix-combine
-     * // 样式问题可查阅这里：https://github.com/thx/magix-combine/issues/6
-     *
-     */
     applyStyle: ApplyStyle,
-    /**
-     * 返回全局唯一ID
-     * @function
-     * @param {String} [prefix] 前缀
-     * @return {String}
-     * @example
-     *
-     * let id = Magix.guid('mx-');
-     * // id maybe mx-7
-     */
-    Cache,
+    Cache: MxCache,
     View,
     Vframe,
+    
     
     Event: MxEvent,
     
@@ -3052,4 +2271,995 @@ let Magix = {
     
     node: GetById
 };
-export default Magix;
+/**
+ * 本文件应存放在magix仓库中，并被install到项目的node_modules目录下。
+ * 但是因magix.d.ts未在项目中检验，先在项目中使用，待稳定后再移入magix仓库中发版，避免频繁发布magix的版本
+ */
+export declare namespace Magix5 {
+    /**
+     * 鼠标事件
+     */
+    interface MagixMouseEvent extends MouseEvent {
+        params: {
+            [key: string]: any
+        },
+        eventTarget: HTMLElement
+    }
+    /**
+     * 键盘事件
+     */
+    interface MagixKeyboardEvent extends KeyboardEvent {
+        params: {
+            [key: string]: any
+        },
+        eventTarget: HTMLElement
+    }
+    /**
+     * 混合鼠标及键盘的事件对象
+     */
+    interface MagixMixedEvent extends MouseEvent, KeyboardEvent {
+        params: {
+            [key: string]: any
+        },
+        eventTarget: HTMLElement
+    }
+    /**
+     * 配置信息接口
+     */
+    interface Config {
+        /**
+         * 默认加载的view
+         */
+        defaultView?: string
+        /**
+         * 默认路径
+         */
+        defaultPath?: string
+        /**
+         * path与view关系映射对象或方法
+         */
+        routes?: string | ((this: Config, path: string, loc?: RouterParse) => string)
+        /**
+         * 在routes里找不到匹配时使用的view，比如显示404
+         */
+        unmatchView?: string
+        /**
+         * 根view的id
+         */
+        rootId?: string
+        /**
+         * 以try catch执行一些用户重写的核心流程，当出错时，允许开发者通过该配置项进行捕获。注意：您不应该在该方法内再次抛出任何错误
+         */
+        error?: (this: void, exception: Error) => void
+        
+        /**
+         * 重写地址栏解析后的对象
+         * @param pathname 路径信息
+         * @param params 参数对象
+         */
+        rewrite?: (pathname: string, params: { [key: string]: string }) => string
+        
+        
+        /**
+         * 其它配置项
+         */
+        [key: string]: any
+    }
+    /**
+     * url解析部分对象接口
+     */
+    interface RouterParseParts {
+        /**
+         * 参数对象
+         */
+        readonly params: {
+            readonly [key: string]: string
+        }
+        /**
+         * 路径字符串
+         */
+        readonly path: string
+    }
+    /**
+     * url解析接口
+     */
+    interface RouterParse {
+        /**
+         * 原始的href
+         */
+        readonly href: string
+
+        /**
+         * 原始的query
+         */
+        readonly srcQuery: string
+
+        /**
+         * 原始的hash
+         */
+        readonly srcHash: string
+
+        /**
+         * srcQuery解析出的对象
+         */
+        readonly query: RouterParseParts
+
+        /**
+         * srcHash解析出的对象
+         */
+        readonly hash: RouterParseParts
+        /**
+         * query中的params与hash中的params对象合并出来的新对象
+         */
+        readonly params: {
+            readonly [key: string]: string
+        }
+
+        /**
+         * 根据hash对象中的path和query对象中的path，再根据要求得出的path
+         */
+        readonly path: string
+
+        /**
+         * 当前url对应的要渲染的根view
+         */
+        readonly view: string
+        /**
+         * 从params中获取参数值，当参数不存在时返回空字符串
+         * @param key key
+         * @param defaultValue 当值不存在时候返回的默认值
+         */
+        get<TDefaultValueType = string>(key: string, defaultValue?: TDefaultValueType): TDefaultValueType
+
+    }
+    /**
+     * 差异对象接口
+     */
+    interface RouterDiffItem {
+        /**
+         * 旧值
+         */
+        readonly from: string
+
+        /**
+         * 新值
+         */
+        readonly to: string
+    }
+    /**
+     * url差异对象接口
+     */
+    interface RouterDiff {
+        /**
+         * 是否为应用首次初始化时强制触发的差异比较
+         */
+        readonly force: boolean
+        /**
+         * 当路径有变化时，才有path这个对象
+         */
+        readonly path?: RouterDiffItem
+
+        /**
+         * 当渲染的根view有变化时，才有view这个对象
+         */
+        readonly view?: RouterDiffItem
+
+        /**
+         * 都有哪些参数发生变化的对象
+         */
+        readonly params: {
+            readonly [key: string]: RouterDiffItem
+        }
+    }
+    /**
+     * 数据载体接口
+     */
+    interface Bag {
+        /**
+         * bag id
+         */
+        id: string
+
+        /**
+         * 从bag中获取数据
+         * @param key 数据key，如果未传递则返回整个数据对象
+         * @param defaultValue 默认值，如果传递了该参数且从bag中获取到的数据类型如果与defaultValue不一致，则使用defaultValue
+         */
+        get<TReturnAndDefaultValueType = any>(key?: string, defaultValue?: TReturnAndDefaultValueType): TReturnAndDefaultValueType
+
+        /**
+         * 设置数据
+         * @param key 数据key
+         * @param value 数据
+         */
+        set(key: string, value: any): void
+
+        /**
+         * 设置数据
+         * @param data 包含数据的对象
+         */
+        set(data: object): void
+    }
+    /**
+     * Magix.State变化事件接口
+     */
+    interface StateChangedEvent extends TriggerEventDescriptor {
+        /**
+         * 包含哪些数据变化的集合对象
+         */
+        readonly keys: {
+            readonly [key: string]: 1
+        }
+    }
+    /**
+     * 事件对象接口
+     */
+    interface Event<T = any, E = any> {
+        /**
+         * 绑定事件
+         * @param name 事件名称
+         * @param fn 事件处理函数
+         */
+        on(name: string, fn: (this: T, e?: TriggerEventDescriptor & E) => void): this
+
+        /**
+         * 解除事件绑定
+         * @param name 事件名称
+         * @param fn 事件处理函数
+         */
+        off(name: string, fn?: (this: T, e?: TriggerEventDescriptor & E) => void): this
+
+        /**
+         * 派发事件
+         * @param name 事件名称
+         * @param data 事件参数
+         * @param remove 是否移除所有的事件监听
+         * @param lastToFirst 是否倒序派发列表中的监听
+         */
+        fire(name: string, data?: object, remove?: boolean, lastToFirst?: boolean): this
+    }
+    /**
+     * 状态接口
+     */
+    interface State extends Event<Router> {
+        /**
+         * 从状态对象中获取数据
+         * @param key 数据key，如果未传递则返回整个状态对象
+         */
+        get<TReturnType = any>(key?: string): TReturnType
+        /**
+         * 设置数据
+         * @param data 数据对象
+         * @param unchanged 指示哪些数据并没有变化的对象
+         */
+        set(data: object, unchanged?: { [key: string]: any }): this
+    }
+    /**
+     * api注册信息接口
+     */
+    interface ServiceInterfaceMeta {
+        /**
+         * 缓存时间，以毫秒为单位
+         */
+        cache?: number
+        /**
+         * 请求的url地址
+         */
+        url?: string
+        /**
+         * 添加的接口元信息名称，需要确保在一个Service中唯一
+         */
+        name: string
+        /**
+         * 逗号分割的字符串，用来清除其它接口的缓存，如该接口是一个添加新数据的接口，这个接口调用成功后，应该把所有获取相关数据的缓存接口给清理掉，否则将获取不到新数据
+         */
+        cleans?: string | string[]
+        /**
+         * 接口在请求发送前调用，可以在该方法内对数据进行加工处理
+         */
+        before?: (this: Bag, bag: Bag) => void
+
+        /**
+         * 接口在成功请求后，在送到view毅调用该方法，可在该方法对数据进行加工处理
+         */
+        after?: (this: Bag, bag: Bag) => void
+
+        [key: string]: any
+    }
+
+    /**
+     * 基础触发事件接口
+     */
+    interface TriggerEventDescriptor {
+        /**
+         * 事件类型
+         */
+        readonly type: string
+    }
+    /**
+     * 路由变化事件接口
+     */
+    interface RouterChangeEvent extends TriggerEventDescriptor {
+        /**
+         * 拒绝url改变
+         */
+        reject: () => void
+
+        /**
+         * 接受url改变
+         */
+        resolve: () => void
+
+        /**
+         * 阻止url改变
+         */
+        prevent: () => void
+    }
+    /**
+     * view监听location接口
+     */
+    interface ViewObserveLocation {
+        /**
+         * 监听path
+         */
+        path?: boolean
+        /**
+         * 监听参数
+         */
+        params?: string | string[]
+    }
+    /**
+     * 路由对象接口
+     */
+    interface Router extends Event<Router> {
+        /**
+         * 解析href的query和hash，默认href为location.href
+         * @param url 待解析的url，如果未指定则使用location.href
+         */
+        parse(url?: string): RouterParse
+        /**
+         * 当前地址栏中的地址与上一个地址栏中的地址差异对象
+         */
+        diff(): RouterDiff
+
+        /**
+         * 导航到新的地址
+         * @param path 路径字符串
+         * @param params 参数对象
+         * @param replace 是否替换当前的历史记录
+         * @param silent 是否是静默更新，不触发change事件
+         */
+        to(path: string, params?: object, replace?: boolean, silent?: boolean): void
+
+        /**
+         * 导航到新的地址
+         * @param params 参数对象
+         * @param replace 是否替换当前的历史记录
+         * @param silent 是否是静默更新，不触发change事件
+         */
+        to(params: object, empty?: any, replace?: boolean, silent?: boolean): void
+        /**
+         * url即将改变时发生
+         */
+        onchange: (this: this, e?: RouterChangeEvent) => void
+        /**
+         * url改变后发生
+         */
+        onchanged: (this: this, e?: RouterDiff & TriggerEventDescriptor) => void
+    }
+    /**
+     * 接口服务事件接口
+     */
+    interface ServiceEvent extends TriggerEventDescriptor {
+        /**
+         * 数据对象的载体
+         */
+        readonly bag: Bag
+        /**
+         * 错误对象，如果有错误发生的话
+         */
+        readonly error: object | string | null
+    }
+    /**
+     * 继承对象接口
+     */
+    interface ExtendPropertyDescriptor<T> {
+        [key: string]: string | number | undefined | boolean | RegExp | symbol | object | null | ((this: T, ...args: any[]) => any)
+    }
+
+    /**
+     * 继承方法中的this指向
+     */
+    type TExtendPropertyDescriptor<T> = ExtendPropertyDescriptor<T> & ThisType<T>;
+    /**
+     * 继承静态属性
+     */
+    interface ExtendStaticPropertyDescriptor {
+        [key: string]: any
+    }
+    /**
+     * vframe静态事件接口
+     */
+    interface VframeStaticEvent extends TriggerEventDescriptor {
+        /**
+         * vframe对象
+         */
+        readonly vframe: Vframe
+    }
+
+
+    /**
+     * 缓存类
+     */
+    interface Cache {
+        /**
+         * 设置缓存的资源
+         * @param key 缓存资源时使用的key，唯一的key对应唯一的资源
+         * @param resource 缓存的资源
+         */
+        set<TResourceAndReturnType = any>(key: string, resource: TResourceAndReturnType): TResourceAndReturnType
+
+        /**
+         * 获取缓存的资源，如果不存在则返回undefined
+         * @param key 缓存资源时使用的key
+         */
+        get<TReturnType = any>(key: string): TReturnType
+        /**
+         * 从缓存对象中删除缓存的资源
+         * @param key 缓存的资源key
+         */
+        del<TReturnType = any>(key: string): TReturnType
+        /**
+         * 判断缓存对象中是否包含给定key的缓存资源
+         * @param key 缓存的资源key
+         */
+        has(key: string): boolean
+        /**
+         * 遍历缓存对象中的所有资源
+         * @param callback 回调
+         * @param options 回调时传递的额外对象
+         */
+        each<TResourceType = any, TOptionsType = any>(callback: (resource: TResourceType, options: TOptionsType, cache: this) => void, options?: TOptionsType): void
+    }
+    /**
+     * 缓存类
+     */
+    interface CacheConstructor {
+        /**
+         * 缓存类
+         * @param max 最大缓存个数
+         * @param buffer 缓存区个数，默认5
+         * @param removedCallback 当缓存的资源被删除时调用
+         */
+        new(max?: number, buffer?: number, removedCallback?: (this: void, resource: any) => void): Cache
+        readonly prototype: Cache
+    }
+
+
+
+    /**
+     * Vframe类原型
+     */
+    interface Vframe extends Event<Vframe> {
+        /**
+         * 当前vframe的唯一id
+         */
+        readonly id: string
+        /**
+         * vframe所在的节点
+         */
+        readonly root: HTMLElement
+        /**
+         * 渲染的view模块路径，如app/views/default
+         */
+        readonly path: string
+
+        /**
+         * 父vframe id，如果没有则为undefined
+         */
+        readonly pId: string
+        /**
+         * 渲染view
+         * @param viewPath view模块路径，如app/views/default
+         * @param viewInitParams 初始化view时传递的参数，可以在view的init方法中接收
+         */
+        mountView(viewPath: string, viewInitParams?: object): void
+        /**
+         * 销毁view
+         */
+        unmountView(): void
+
+        /**
+         * 在某个dom节点上渲染vframe
+         * @param node 要渲染的节点
+         * @param viewPath view路径
+         * @param viewInitParams 初始化view时传递的参数，可以在view的init方法中接收
+         */
+        mountVframe(node: HTMLElement, viewPath: string, viewInitParams?: object): this
+
+        /**
+         * 销毁dom节点上渲染的vframe
+         * @param node 节点对象或vframe id，默认当前view
+         * @param isVframeId 指示node是否为vframe id
+         */
+        unmountVframe(node?: HTMLElement | string, isVframeId?: boolean): void
+
+        /**
+         * 渲染某个节点下的所有子view
+         * @param node 节点对象，默认当前view
+         * @param viewInitParams 初始化view时传递的参数，可以在view的init方法中接收
+         */
+        mountZone(node?: HTMLElement, viewInitParams?: object): void
+
+        /**
+         * 销毁某个节点下的所有子view
+         * @param node 节点对象，默认当前view
+         */
+        unmountZone(node?: HTMLElement): void
+
+        /**
+         * 获取祖先vframe
+         * @param level 向上查找层级，默认1级，即父vframe
+         */
+        parent(level?: number): this | null
+
+        /**
+         * 获取当前vframe的所有子vframe的id。返回数组中，id在数组中的位置并不固定
+         */
+        children(): string[]
+
+        /**
+         * 调用vframe的view中的方法
+         * @param name 方法名
+         * @param args 传递的参数
+         */
+        invoke<TReturnType>(name: string, args?: any[]): TReturnType
+    }
+    /**
+     * Vframe类，开发者绝对不需要继承、实例化该类！
+     */
+    interface VframeConstructor extends Event<Vframe, {
+        /**
+         * vframe对象
+         */
+        vframe: Vframe
+    }> {
+        /**
+         * 获取当前页面上所有的vframe
+         */
+        all(): {
+            [key: string]: Vframe
+        }
+        /**
+         * 根据id获取vframe
+         * @param id
+         */
+        byId(id: string): Vframe
+        /**
+         * 根据节点获取vframe
+         * @param node 节点对象
+         */
+        byNode(node: HTMLElement): Vframe
+
+        /**
+         * 当vframe创建并添加到管理对象上时触发
+         */
+        onadd: (this: this, e?: VframeStaticEvent) => void
+
+        /**
+         * 当vframe销毁并从管理对象上删除时触发
+         */
+        onremove: (this: this, e?: VframeStaticEvent) => void
+        /**
+         * 原型
+         */
+        readonly prototype: Vframe
+    }
+    /**
+     * view类原型
+     */
+    interface View extends Event<View> {
+        /**
+         * 当前view的唯一id
+         */
+        readonly id: string
+        /**
+         * 当前view所在的节点对象
+         */
+        readonly root: HTMLElement
+        /**
+         * 模板
+         */
+        readonly tmpl: Function
+        /**
+         * 持有当前view的vframe
+         */
+        readonly owner: Vframe
+        /**
+         * 更新界面对象
+         */
+        /**
+         * 混入的当前View类原型链上的其它对象
+         */
+        mixins?: ExtendStaticPropertyDescriptor[]
+
+        /**
+         * 初始化View时调用
+         * @param extra 初始化时传递的额外参数
+         */
+        init(extra?: object): void
+        /**
+         * 渲染界面，开发者在该方法内完成界面渲染的流程
+         */
+        render(...args: any[]): void
+        /**
+         * 更新某个节点的html，该方法内部会自动处理相关的子view
+         * @param id 设置html的节点id
+         * @param html 待设置的html
+         */
+        assign(data: object): boolean
+
+        /**
+         * 监听地址栏的改变，如"/app/path?page=1&size=20"，其中"/app/path"为path,"page,size"为参数
+         * @param parameters 监听地址栏中的参数，如"page,size"或["page","size"]表示监听page或size的改变
+         * @param observePath 是否监听path的改变
+         */
+        observeLocation(parameters: string | string[], observePath?: boolean): void
+
+        /**
+         * 监听地址栏的改变
+         * @param observeObject 参数对象
+         */
+        observeLocation(observeObject: ViewObserveLocation): void
+        /**
+         * 通知当前view某个节点即将开始进行html的更新
+         * @param node 哪块区域需要更新，默认当前view
+         */
+        beginUpdate(node?: HTMLElement): void
+        /**
+         * 通知当前view某个节点结束html的更新
+         * @param node 哪块区域需要更新，默认当前view
+         */
+        endUpdate(node?: HTMLElement): void
+        /**
+         * 包装异步回调
+         * 为什么要包装？
+         * 在单页应用的情况下，一些异步(如setTimeout,ajax等)回调执行时，当前view已经被销毁。如果你的回调中去操作了DOM，
+         * 则会出错，为了避免这种情况的出现，可以调用该方法包装一次，magix会确保你的回调在view未销毁的情况下被调用
+         * @param callback 回调方法
+         * @param context 回调方法执行时的this指向
+         */
+        wrapAsync<TThisType>(callback: (this: TThisType, ...args: any[]) => void, context?: TThisType): (...args: any[]) => void
+        /**
+         * 离开确认方法，需要开发者实现离开的界面和逻辑
+         * @param msg 调用leaveTip时传递的离开消息
+         * @param resolve 确定离开时调用该方法，通知magix离开
+         * @param reject 留在当前界面时调用的方法，通知magix不要离开
+         */
+        leaveConfirm(resolve: () => void, reject: () => void, msg: string): void
+        /**
+         * 离开提醒，比如表单有变化且未保存，我们可以提示用户是直接离开，还是保存后再离开
+         * @param msg 离开提示消息
+         * @param hasChanged 是否显示提示消息的方法，返回true表示需要提示用户
+         */
+        leaveTip(msg: string, hasChanged: () => boolean): void
+
+        /**
+         * 获取设置的数据，当key未传递时，返回整个数据对象
+         * @param key 设置时的数据key
+         */
+        get<TReturnType = any>(key?: string): TReturnType
+        /**
+         * 设置数据
+         * @param data 数据对象，如{a:20,b:30}
+         * @param unchanged 指示哪些数据并没有变化的对象
+         */
+        set(data?: { [key: string]: any }, unchanged?: { [key: string]: any }, ): this
+        /**
+         * 检测数据变化，更新界面，放入数据后需要显式调用该方法才可以把数据更新到界面
+         * @param data 数据对象，如{a:20,b:30}
+         * @param unchanged 指示哪些数据并没有变化的对象
+         * @param resolve 完成更新后的回调
+         */
+        digest(data?: { [key: string]: any }, unchanged?: { [key: string]: any }, resolve?: () => void): void
+
+        /**
+         * 获取当前数据状态的快照，配合altered方法可获得数据是否有变化
+         */
+        snapshot(): this
+
+        /**
+         * 检测数据是否有变动
+         */
+        altered(): boolean
+        /**
+         * 得到模板中@符号对应的原始数据
+         * @param data 数据对象
+         */
+        translate(data: object): object
+        /**
+         * 得到模板中@符号对应的原始数据
+         * @param origin 源字符串
+         */
+        parse(origin: string): object
+        /**
+         * view销毁时触发
+         */
+        ondestroy: (this: this, e?: TriggerEventDescriptor) => void;
+
+        /**
+         * 当render方法被调用时触发
+         */
+        onrendercall: (this: this, e?: TriggerEventDescriptor) => void;
+    }
+    /**
+     * View类
+     */
+    interface ViewConstructor {
+        /**
+         * 继承Magix.View
+         * @param props 包含可选的init和render方法的对象
+         * @param statics 静态方法或属性的对象
+         */
+        extend<TProps = object, TStatics = object>(props?: TExtendPropertyDescriptor<TProps & View>, statics?: TStatics): this & TStatics
+        /**
+         * 扩展到Magix.View原型上的对象
+         * @param props 包含可选的ctor方法的对象
+         */
+        merge(...args: TExtendPropertyDescriptor<View>[]): this
+        /**
+         * 原型
+         */
+        readonly prototype: View
+    }
+    /**
+     * 接口管理类原型
+     */
+    interface Service {
+        /**
+         * 所有请求完成回调done
+         * @param metas 接口名称或对象数组
+         * @param done 全部接口成功时回调
+         */
+        all(metas: ServiceInterfaceMeta[] | string[] | string, done: (this: this, err: any, ...bags: Bag[]) => void): this
+
+        /**
+         * 所有请求完成回调done，与all不同的是：如果接口指定了缓存，all会走缓存，而save则不会
+         * @param metas 接口名称或对象数组
+         * @param done 全部接口成功时回调
+         */
+        save(metas: ServiceInterfaceMeta[] | string[] | string, done: (this: this, err: any, ...bags: Bag[]) => void): this
+
+        /**
+         * 任意一个成功均立即回调，回调会被调用多次
+         * @param metas 接口名称或对象数组
+         * @param done 全部接口成功时回调
+         */
+        one(metas: ServiceInterfaceMeta[] | string[] | string, done: (this: this, err: any, ...bags: Bag[]) => void): this
+        /**
+         * 排队，前一个all,one或save任务做完后的下一个任务，类似promise
+         * @param callback 当前面的任务完成后调用该回调
+         */
+        enqueue(callback: (this: this, ...args: any[]) => void): this
+        /**
+         * 开始处理队列中的下一个任务
+         */
+        dequeue(...args: any[]): void
+        /**
+         * 销毁当前请求，不可以继续发起新请求，而且不再调用相应的回调
+         */
+        destroy(): void
+    }
+    /**
+     * 接口管理类
+     */
+    interface ServiceConstructor extends Event<ServiceConstructor, ServiceEvent> {
+        /**
+         * 继承产生新的Service类
+         * @param sync 同步数据的方法，通常在该方法内与服务端交换数据
+         * @param cacheMax 最大缓存数
+         * @param cacheBuffer 缓存区数量
+         */
+        extend(sync: (this: void, bag: Bag, callback: (error?: string | object) => void) => void, cacheMax?: number, cacheBuffer?: number): this
+        /**
+         * 添加接口元信息
+         * @param metas 接口元信息数组
+         */
+        add(metas: ServiceInterfaceMeta[]): void
+
+        /**
+         * 根据接口元信息创建bag对象
+         * @param meta 接口元信息对象或名称字符串
+         */
+        create(meta: ServiceInterfaceMeta | string): Bag
+
+        /**
+         * 获取元信息对象
+         * @param meta 接口元信息对象或名称字符串
+         */
+        meta(meta: ServiceInterfaceMeta | string): ServiceInterfaceMeta
+
+        /**
+         * 从缓存中获取或创意bag对象
+         * @param meta 接口元信息对象或名称字符串
+         * @param create 是否是创建新的Bag对象，如果否，则尝试从缓存中获取
+         */
+        get(meta: ServiceInterfaceMeta | string, create: boolean): Bag
+
+        /**
+         * 从缓存中清除指定接口的数据
+         * @param names 逗号分割的接口名称字符串或数组
+         */
+        clear(names: string | string[]): void
+
+        /**
+         * 从缓存中获取bag对象
+         * @param meta 接口元信息对象或名称字符串
+         */
+        cached(meta: ServiceInterfaceMeta | string): Bag | null
+
+        /**
+         * 接口发送请求前触发
+         */
+        onbegin: (this: this, e?: ServiceEvent) => void;
+
+        /**
+         * 接口发送结束时触发，不管请求成功或失败
+         */
+        onend: (this: this, e?: ServiceEvent) => void;
+        /**
+         * 初始化
+         */
+        new(): Service
+        /**
+         * 原型
+         */
+        readonly prototype: Service
+    }
+    interface Magix {
+        /**
+            * 设置或获取配置信息
+            * @param cfg 配置信息参数对象
+            */
+        config<T extends object>(cfg: Config & T): Config & T
+
+        /**
+         * 获取配置信息
+         * @param key 配置key
+         */
+        config(key: string): any
+
+        /**
+         * 获取配置信息对象
+         */
+        config<T extends object>(): Config & T
+
+        /**
+         * 应用初始化入口
+         * @param cfg 配置信息参数对象
+         */
+        boot(cfg: Config): void
+        /**
+         * 把列表转化成hash对象。Magix.toMap([1,2,3,5,6]) => {1:1,2:1,3:1,4:1,5:1,6:1}。Magix.toMap([{id:20},{id:30},{id:40}],'id') => {20:{id:20},30:{id:30},40:{id:40}}
+         * @param list 源数组
+         * @param key 以数组中对象的哪个key的value做为hash的key
+         */
+        toMap<T extends object>(list: any[], key?: string): T
+        /**
+         * 以try catch方式执行方法，忽略掉任何异常。返回成功执行的最后一个方法的返回值
+         * @param fns 函数数组
+         * @param args 参数数组
+         * @param context 在待执行的方法内部，this的指向
+         */
+        toTry<TReturnType, TContextType>(fns: ((this: TContextType, ...args: any[]) => void) | ((this: TContextType, ...args: any[]) => void)[], args?: any[], context?: TContextType): TReturnType
+
+        /**
+         * 以try catch方式执行方法，忽略掉任何异常。返回成功执行的最后一个方法的返回值
+         * @param fns 函数数组
+         * @param args 参数数组
+         * @param context 在待执行的方法内部，this的指向
+         */
+        toTry<TReturnType>(fns: Function | Function[], args?: any[], context?: any): TReturnType
+
+        /**
+         * 转换成字符串路径。Magix.toUrl('/xxx/',{a:'b',c:'d'}) => /xxx/?a=b&c=d
+         * @param path 路径
+         * @param params 参数对象
+         * @param keo 保留空白值的对象
+         */
+        toUrl(path: string, params?: object, keo?: object): string
+        /**
+         * 把路径字符串转换成对象。Magix.parseUrl('/xxx/?a=b&c=d') => {path:'/xxx/',params:{a:'b',c:'d'}}
+         * @param url 路径字符串
+         */
+        parseUrl(url: string): RouterParseParts
+        /**
+         * 检测某个对象是否拥有某个属性。
+         * @param owner 检测对象
+         * @param prop 属性
+         */
+        has(owner: object, prop: string | number): boolean
+
+
+        /**
+         * 判断一个节点是否在另外一个节点内，如果比较的2个节点是同一个节点，也返回true
+         * @param node 节点或节点id
+         * @param container 容器节点或节点id
+         */
+        inside(node: HTMLElement, container: HTMLElement): boolean
+
+        /**
+         * document.getElementById的简写
+         * @param id 节点id
+         */
+        node(id: string): HTMLElement | null
+
+        /**
+         * 使用加载器的加载模块功能
+         * @param deps 模块id
+         * @param callback 回调
+         */
+        use(deps: string | string[], callback: (...args: object[]) => any): void
+
+        /**
+         * 保护对象不被修改
+         * @param o 保护对象
+         */
+        guard<T extends object>(o: T): T
+
+        /**
+         * 触发事件
+         * @param node dom节点
+         * @param type 事件类型
+         * @param data 数据
+         */
+        dispatch(node: HTMLElement, type: string, data?: any): void
+        /**
+         * 获取对象类型
+         * @param aim 目标对象
+         */
+        type(aim: any): string
+        /**
+         * 向页面追加样式
+         * @param key 样式对应的唯一key，该key主要防止向页面反复添加同样的样式
+         * @param cssText 样式字符串
+         */
+        applyStyle(key: string, cssText: string): void
+        /**
+         * 向页面追加样式
+         * @param atFile 以@开头的文件路径
+         */
+        applyStyle(atFile: string): void
+        /**
+         * 生成唯一的guid
+         * @param prefix guid的前缀，默认mx-
+         */
+        guid(prefix?: string): string
+
+        
+
+        /**
+         * view类
+         */
+        View: ViewConstructor
+        /**
+         * 缓存类
+         */
+        Cache: CacheConstructor
+        
+        /**
+         * 事件对象
+         */
+        Event: Event
+        /**
+         * 路由对象
+         */
+        Router: Router
+        /**
+         * Vframe类，开发者绝对不需要继承、实例化该类！
+         */
+        Vframe: VframeConstructor
+    }
+}
+//强制转换
+export default Magix as any as Magix5.Magix;

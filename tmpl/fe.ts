@@ -1,5 +1,5 @@
-import Magix from './lib/magix.js';
-import I18n from './i18n/index.js';
+import Magix from './lib/magix';
+import I18n from './i18n/index';
 Magix.applyStyle('@scoped.style');
 let boot = Magix.node('boot') as HTMLScriptElement;
 let src = boot.src.replace(/[^/]+$/, '');

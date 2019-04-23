@@ -6,5 +6,7 @@ export default {
     '@{lang#data.tool}': '工具',
     '@{lang#data.color}': '配色',
     '@{lang#data.fw}': '框架',
-    '@{lang#data.plugin}':'插件'
+    '@{lang#data.plugin}': '插件',
+    '@{lang#feedback}': '反馈',
+    '@{lang#cooperate}': '共建'
 }

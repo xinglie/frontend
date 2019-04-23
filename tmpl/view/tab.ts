@@ -2,8 +2,8 @@
     author:xinglie.lkf@alibaba-inc.com
 */
 'ref@./default.less';
-import Magix from '../lib/magix.js';
-import { List, ListMap } from '../data/list.js';
+import Magix from '../lib/magix';
+import { List, ListMap } from '../data/list';
 export default Magix.View.extend({
     tmpl: '@tab.html',
     init() {

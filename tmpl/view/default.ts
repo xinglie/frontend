@@ -1,9 +1,9 @@
 /*
     author:xinglie.lkf@alibaba-inc.com
 */
-import Magix from '../lib/magix.js';
+import Magix from '../lib/magix';
 Magix.applyStyle('@default.less');
-let Throttle = (fn, timespan) {
+let Throttle = (fn: () => void, timespan: number) => {
     timespan = timespan || 150;
     let last = Date.now();
     let timer;

@@ -152,6 +152,10 @@ gulp.task('build', ['cleanBuild', 'cleanSrc'], () => {
                     global_defs: {
                         DEBUG: false
                     }
+                },
+                output: {
+                    ascii_only: true,
+                    comments: /^!/
                 }
             }))
             .pipe(gulp.dest(buildFolder));

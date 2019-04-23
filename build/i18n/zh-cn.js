@@ -1,1 +1,1 @@
-export default{_g:"前端网址导航",__:"学习",_a:"图标",_f:"UX团队",_b:"工具",_c:"配色",_d:"框架",_e:"插件"};
+export default{_g:"\u524d\u7aef\u7f51\u5740\u5bfc\u822a",__:"\u5b66\u4e60",_a:"\u56fe\u6807",_f:"UX\u56e2\u961f",_b:"\u5de5\u5177",_c:"\u914d\u8272",_d:"\u6846\u67b6",_e:"\u63d2\u4ef6",_h:"\u53cd\u9988",_i:"\u5171\u5efa"};
