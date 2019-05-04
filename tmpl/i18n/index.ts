@@ -7,7 +7,7 @@ let I18n = {
 let DefaultLang = 'zh-cn';
 let Has = Magix.has;
 let Reg = /\{(\d+)\}/g;
-export default (key, ...args) => {
+export default (key: string, ...args: any[]) => {
     let lang = (Magix.config('lang') || navigator.language).toLowerCase();
     if (!Has(I18n, lang)) {
         lang = DefaultLang;

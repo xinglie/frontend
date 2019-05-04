@@ -24,7 +24,8 @@ Magix.View.merge({
 Magix.boot({
     lang,
     paths: {
-        view: src + 'view/'
+        view: src + 'view/',
+        data: src + 'data/'
     },
     rootId: 'app',
     defaultPath: '/nav',

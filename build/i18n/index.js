@@ -1,1 +1,2 @@
+/*!1.0.2 kooboy_li@163.com*/
 import e from"../lib/magix.js";import t from"./zh-cn.js";let a={"zh-cn":t,zh:t},l=e.has,n=/\{(\d+)\}/g;export default(t,...r)=>{let g=(e.config("lang")||navigator.language).toLowerCase();l(a,g)||(g="zh-cn");let o=a[g],h=l(o,t)?o[t]:t;return r.length&&(h=h.replace(n,(e,t,a)=>(t|=0,r.length>t?(a=r[t],l(o,a)?o[a]:a):e))),h};

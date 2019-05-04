@@ -10,18 +10,21 @@ export default Magix.View.extend({
     init() {
         this.observeLocation('c');
     },
-    render() {
+    async render() {
         let { params } = Magix.Router.parse();
         let tab = params.c;
         if (!ListMap[tab]) {
             tab = List[0].key;
         }
         bodyStyle.cursor = 'wait';
-        Magix.use(`../data/${tab}`, this.wrapAsync(list => {
-            this.digest({
-                list: list || []
-            });
-            bodyStyle.cursor = 'default';
-        }));
+        let latestMarker = this.getMarker();
+        Magix.use(`@../data/${tab}`, list => {
+            if (latestMarker()) {
+                this.digest({
+                    list: list || []
+                });
+                bodyStyle.cursor = 'default';
+            }
+        });
     }
 });
