@@ -1,0 +1,6 @@
+<div class="tracker" id="t_{{=id}}" mx-click="@{update.range}()">
+    {{if buffer}}
+    <div class="buffer" style="width:{{=bufferValue*100}}%;"></div>
+    {{/if}}
+</div>
+<div class="pointer" style="left:{{=value*100}}%" mx-mousedown="@{start.drag}()"></div>

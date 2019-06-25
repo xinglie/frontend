@@ -10,7 +10,7 @@ export default Magix.View.extend({
     init() {
         this.observeLocation('c');
     },
-    async render() {
+    render() {
         let { params } = Magix.Router.parse();
         let tab = params.c;
         if (!ListMap[tab]) {

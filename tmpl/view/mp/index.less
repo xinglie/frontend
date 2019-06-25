@@ -1,0 +1,161 @@
+.root{
+    position: relative;
+    color:#fff;
+    height: 60px;
+    top:60px;
+    transition: top 0.3s;
+}
+.channels-root{
+    position: absolute;
+    top:-240px;
+    background: #3c4049cc;
+    height: 240px;
+    width: 100%;
+    transition: all 0.3s;
+    overflow:auto;
+}
+.toggle{
+    top:0;
+}
+.channel{
+    width:120px;
+    float: left;
+    height: 120px;
+    text-align: center;
+    padding-top: 14px;
+    cursor: pointer;
+}
+.channel:hover{
+    opacity: 0.6;
+}
+.channel-cover{
+    width:70px;
+    height:70px;
+}
+.channel-info{
+    float: left;
+    width:220px;
+}
+.channel-info-img{
+    width:56px;
+    height:56px;
+    border:solid 1px #777;
+    margin:2px;
+    float: left;
+}
+// .scrollable{
+//     &::-webkit-scrollbar{
+//         height:1px;
+//         width:1px;
+//         background: #3c4049cc;
+//     }
+//     &::-webkit-scrollbar-corner{
+//         height:1px;
+//         width:1px;
+//         background: #3c4049cc;
+//     }
+//     &::-webkit-scrollbar-thumb{
+//         background: #fff;
+//     }
+//     &::-webkit-scrollbar-thumb:hover{
+//         background: #fff;
+//     }
+// }
+
+.player{
+    height:100%;
+    background: #333;
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+}
+.scroll-title,
+.channel-title{
+    margin:5px 10px 0;
+    float: left;
+    width:140px;
+}
+.channel-title{
+    cursor: pointer;
+}
+.channel-title:hover{
+    opacity: 0.6;
+}
+.player-ctrls{
+    float: left;
+    padding: 4px;
+    width: 480px;
+}
+.player-lyric{
+    float: right;
+    width:300px;
+    text-align: center;
+}
+.player-btns{
+    height: 30px;
+    user-select: none;
+}
+.player-tip{
+    font-size: 12px;
+    display: inline-block;
+    margin:5px 5px 0;
+}
+.player-btn{
+    font-size: 22px;
+    float: left;
+    padding: 2px;
+    border:solid 1px transparent;
+}
+.player-btn:hover{
+    opacity: 0.6;
+    border-color:#fff;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.player-btn-disabled{
+    cursor: not-allowed;
+    color:#8a8a8a;
+}
+.player-btn-disabled:hover{
+    border-color:transparent;
+}
+.player-tracker{
+    width:390px;
+    float: left;
+    margin-top: 10px;
+}
+.r180{
+    transform: rotate(180deg);
+}
+.player-v{
+    float: right;
+    margin-right: 90px;
+}
+.player-v-tracker{
+    width:100px;
+    margin: 13px 0 0 5px;
+    float: left;
+}
+.player-time{
+    font-size: 12px;
+    margin-left: 10px;
+}
+.lyric-line{
+    font-size:12px;
+    opacity: 0.6;
+    line-height: 20px;
+    color:#afafaf;
+    user-select: none;
+    height: 20px;
+    overflow: hidden;
+}
+.lyric-active{
+    font-weight: bold;
+    font-size: 14px;
+    opacity: 1;
+    color:#fff;
+}
+.player-mode{
+    margin-left: 15px;
+}

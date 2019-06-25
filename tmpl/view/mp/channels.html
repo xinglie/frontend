@@ -1,0 +1,14 @@
+<div class="clearfix">
+    {{if error}}
+        {{=error}}
+    {{else}}
+    {{each channels as c}}
+        <div class="channel" mx-click="@{update.channel}({channel:{{@c}}})">
+            <img class="channel-cover" src="{{=c.cover_small}}"/>
+            <div>
+                {{=c.name}}
+            </div>
+        </div>
+    {{/each}}
+    {{/if}}
+</div>

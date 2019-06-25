@@ -1,0 +1,55 @@
+
+<div class="root{{if active}} toggle{{/if}}">
+    <mx-vframe src="./channels"
+        class="channels-root{{if active&&!cshow}} toggle{{/if}}"
+        mx-change="@{update.channel}()"/>
+    <div class="player clearfix">
+        {{if active}}
+        <div class="channel-info">
+            <img class="channel-info-img" src="{{=song.picture}}"/>
+            <div class="channel-title" mx-click="@{toggle.channels}()">
+                分类：{{=active.name}}
+            </div>
+            <marquee class="scroll-title" scrollamount="2">
+                {{=song.title}}-{{=song.artist}}
+            </marquee>
+        </div>
+        <div class="player-ctrls">
+            <div class="clearfix player-btns">
+                <i class="iconfont player-btn r180{{if !undo}} player-btn-disabled{{/if}}" mx-click="{{@undo}}?@{pre.song}()" title="{{=ptip}}">&#xe600;</i>
+                <i class="iconfont player-btn" mx-click="@{update.status}()"　title="点击{{if play}}暂停{{else}}播放{{/if}}">
+                    {{if play}}
+                    &#xe62d;
+                    {{else}}
+                    &#xe6aa;
+                    {{/if}}
+                </i>
+                <i class="iconfont player-btn" mx-click="@{next.song}()" title="{{=ntip}}">&#xe600;</i>
+                <i class="iconfont player-btn player-mode" mx-click="@{update.mode}()" title="正在{{if mode=='rdm'}}随机播放{{else}}单曲循环{{/if}}">
+                    {{if mode=='rdm'}}
+                    &#xe6cd;
+                    {{else}}
+                    &#xe61e;
+                    {{/if}}
+                </i>
+                <span class="player-tip">
+                    {{if error}}
+                    {{=error}}
+                    {{else if !play}}
+                    点击播放按钮继续
+                    {{/if}}
+                </span>
+                <div class="clearfix player-v">
+                    <i class="iconfont player-btn mr5" mx-click="@{toggle.mute}()">&#xe829;</i>
+                    <mx-slider class="player-v-tracker"
+                        *value="{{@volume}}"
+                        mx-update="@{update.volume}()"
+                        mx-change="@{update.volume}()" />
+                </div>
+            </div>
+            <mx-vframe src="./time" class="clearfix"/>
+        </div>
+        <mx-vframe src="./lyric" class="player-lyric"/>
+        {{/if}}
+    </div>
+</div>

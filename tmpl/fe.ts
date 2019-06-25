@@ -24,12 +24,11 @@ Magix.View.merge({
 Magix.boot({
     lang,
     paths: {
-        view: src + 'view/',
-        data: src + 'data/'
+        '~fe': src
     },
     rootId: 'app',
     defaultPath: '/nav',
-    defaultView: 'view/default',
+    defaultView: '~fe/view/default',
     rewrite(path, params) {
         let reg = /^\/nav\/(.+)$/;
         let m = path.match(reg);

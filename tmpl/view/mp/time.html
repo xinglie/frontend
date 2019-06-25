@@ -1,0 +1,2 @@
+<mx-slider class="player-tracker" *value="{{@current/duration}}" mx-update="@{stop.update}()" mx-change="@{update.time}()" *buffer="true" *buffer-value="{{@buffered}}" />
+<span class="player-time">{{=format(current)}} / {{=format(duration)}}</span>

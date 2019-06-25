@@ -15,7 +15,6 @@ combineTool.config({
     compiledFolder: srcFolder,
     projectName: 'fe',
     loaderType: 'module',
-    md5CssSelectorLen: 3,
     galleries: {
         mxRoot: 'gallery/'
     },
@@ -26,8 +25,8 @@ combineTool.config({
     compileJSStart(content) {
         var str = ts.transpileModule(content, {
             compilerOptions: {
-                lib: ['es7'],
-                target: 'es6',
+                lib: ['es2017'],
+                target: 'es2017',
                 module: ts.ModuleKind.ESNext
             }
         });
