@@ -32,8 +32,12 @@ export default Object.assign({
     '@{init.audio}'() {
         if (!this['@{core.audio}']) {
             let audio = new Audio();
+            let timer;
             audio.onerror = () => {
-                this.fire('@{when.song.error}');
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    this.fire('@{when.song.error}');
+                }, 2e3);
             };
             audio.onended = () => {
                 this.fire('@{when.song.end}');

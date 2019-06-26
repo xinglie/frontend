@@ -4,7 +4,8 @@
 'ref@./index.less';
 import Magix, { Magix5 } from '../../lib/magix';
 import Player from './player';
-let lineReg = /(\[[0-9:\.]+\][\r\n]*)+([^\r\n]*)/g;
+let lineReg = /((?:\[[0-9:\.]+\])+)([^\r\n]*)/g;
+let timeSpaceReg = /\][\r\n\s]*\[/g;
 let offsetReg = /\[offset\s*:\s*(\d+)\]/;
 let timeReg = /\[([0-9\.:]+)\]/g;
 let Sort = (a, b) => a.time - b.time;
@@ -16,30 +17,31 @@ let ErrorLyric = [{
 let ParseLyric = lyric => {
     let offset = 0;
     let lyrics = [];
-    lyric.replace(offsetReg, (m, time) => {
-        offset = parseFloat(time) / 1000;
-    }).replace(lineReg, (m, g, c) => {
-        g.replace(timeReg, (_, time) => {
-            time = time.split(':');
-            let t = 0, max = time.length;
-            for (let i = 0, f; i < max; i++) {
-                f = (max - i - 1);
-                if (f > 0) {
-                    f *= 60;
-                } else {
-                    f = 1;
+    lyric.replace(timeSpaceReg, '][')
+        .replace(offsetReg, (m, time) => {
+            offset = parseFloat(time) / 1000;
+        }).replace(lineReg, (m, g, c) => {
+            g.replace(timeReg, (_, time) => {
+                time = time.split(':');
+                let t = 0, max = time.length;
+                for (let i = 0, f; i < max; i++) {
+                    f = (max - i - 1);
+                    if (f > 0) {
+                        f *= 60;
+                    } else {
+                        f = 1;
+                    }
+                    t += time[i] * f;
                 }
-                t += time[i] * f;
-            }
-            t += offset;
-            if (!isNaN(t)) {
-                lyrics.push({
-                    time: t,
-                    text: c
-                });
-            }
+                t += offset;
+                if (!isNaN(t)) {
+                    lyrics.push({
+                        time: t,
+                        text: c
+                    });
+                }
+            });
         });
-    });
     lyrics = lyrics.sort(Sort);
     return lyrics;
 };

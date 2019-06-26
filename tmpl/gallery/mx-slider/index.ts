@@ -11,12 +11,6 @@ export default Magix.View.extend({
         this.assign(data);
     },
     assign(data) {
-        if (isNaN(data.value)) {
-            data.value = 0;
-        }
-        if (data.buffer && isNaN(data.bufferValue)) {
-            data.bufferValue = 0;
-        }
         this.set(data);
         return true;
     },

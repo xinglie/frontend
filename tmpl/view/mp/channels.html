@@ -2,7 +2,7 @@
     {{if error}}
         {{=error}}
     {{else}}
-    {{each channels as c}}
+    {{each channels as c idx}}
         <div class="channel" mx-click="@{update.channel}({channel:{{@c}}})">
             <img class="channel-cover" src="{{=c.cover_small}}"/>
             <div>

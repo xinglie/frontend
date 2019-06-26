@@ -28,9 +28,15 @@ export default Magix.View.extend({
         });
         Player.on('@{when.song.time.update}', e => {
             if (!this.get('stop')) {
+                let { duration, current } = e;
+                let percent = 0;
+                if (duration > 0) {
+                    percent = current / duration;
+                }
                 this.digest({
-                    duration: e.duration,
-                    current: e.current,
+                    percent,
+                    duration,
+                    current,
                     buffered: e.buffered
                 });
             }
