@@ -60,14 +60,19 @@ export default Magix.View.extend({
     },
     '$doc<keydown>'(e: KeyboardEvent) {
         //37 left  39 right
-        let { duration, current } = this.get();
-        if (e.keyCode == 37) {
-            current -= FastStep;
-        } else if (e.keyCode == 39) {
-            current += FastStep;
+        let { keyCode } = e;
+        let left = keyCode == 37;
+        let right = keyCode == 39;
+        if (left || right) {
+            let { duration, current } = this.get();
+            if (left) {
+                current -= FastStep;
+            } else if (right) {
+                current += FastStep;
+            }
+            if (current < 0) current = 0;
+            else if (current > duration) current = duration;
+            Player["@{seek.time}"](current);
         }
-        if (current < 0) current = 0;
-        else if (current > duration) current = duration;
-        Player["@{seek.time}"](current);
     }
 });

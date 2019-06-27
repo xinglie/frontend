@@ -17,7 +17,7 @@ export default Magix.View.extend({
             tab = List[0].key;
         }
         bodyStyle.cursor = 'wait';
-        let latestMarker = this.getMarker();
+        let latestMarker = this.getMarker('@{render}');
         Magix.use(`@../data/${tab}`, list => {
             if (latestMarker()) {
                 this.digest({

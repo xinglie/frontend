@@ -7,9 +7,9 @@
 }
 .channels-root{
     position: absolute;
-    top:-240px;
+    top:-230px;
     background: #3c4049cc;
-    height: 240px;
+    height: 230px;
     width: 100%;
     transition: all 0.3s;
     overflow:auto;
@@ -17,20 +17,40 @@
 .toggle{
     top:0;
 }
+.channels{
+    padding: 4px;
+}
 .channel{
-    width:120px;
+    width:98px;
     float: left;
-    height: 120px;
+    height: 110px;
     text-align: center;
-    padding-top: 14px;
     cursor: pointer;
+    border: solid 1px transparent;
+    border-radius: 5px;
 }
 .channel:hover{
     opacity: 0.6;
+    border-color: #fff3;
+}
+.channel-active{
+    border-color: #fff;
+}
+.channel-active:hover{
+    opacity: 1;
+    border-color: #fff;
+}
+.channel-cover-wrap{
+    display: inline-flex;
+    align-items: center;
+    width:88px;
+    height:80px;
 }
 .channel-cover{
-    width:70px;
-    height:70px;
+    width: auto;
+	height: auto;
+	max-width: 100%;
+	max-height: 100%;;
 }
 .channel-info{
     float: left;
@@ -100,17 +120,33 @@
     display: inline-block;
     margin:5px 5px 0;
 }
+@keyframes rotate{
+    from{
+        transform: rotate(0deg);
+    }
+    to{
+        transform: rotate(360deg);
+    }
+}
 .player-btn{
     font-size: 22px;
     float: left;
     padding: 2px;
     border:solid 1px transparent;
     cursor: pointer;
+    border-radius: 4px;
 }
 .player-btn:hover{
     opacity: 0.6;
     border-color:#fff;
-    border-radius: 4px;
+}
+
+.player-buffer{
+    animation: rotate 1.8s linear infinite;
+}
+.player-buffer:hover{
+    opacity: 1;
+    border-color:transparent;
 }
 
 .player-btn-disabled{
@@ -133,7 +169,7 @@
     margin-right: 90px;
 }
 .player-v-tracker{
-    width:100px;
+    width:80px;
     margin: 13px 0 0 5px;
     float: left;
 }

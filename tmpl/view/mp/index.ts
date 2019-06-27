@@ -7,20 +7,27 @@ Magix.applyStyle('@index.less');
 export default Magix.View.extend({
     tmpl: '@index.html',
     init() {
-        let next = () => {
+        Player.on('@{when.song.end}', () => {
             if (this.get('mode') == 'rdm') {
                 let active = this.get('active');
                 Player["@{next.song}"](active.channel_id);
             } else {
                 Player["@{replay}"]();
             }
-        };
-        Player.on('@{when.song.error}', next);
-        Player.on('@{when.song.end}', next);
+        });
         Player.on('@{when.status.change}', (e) => {
-            this.digest({
-                play: e.play
-            });
+            let state = {} as {
+                play: boolean
+                buffer: boolean
+            };
+            console.log(e);
+            if (Magix.has(e, 'play')) {
+                state.play = e.play;
+            }
+            if (Magix.has(e, 'buffer')) {
+                state.buffer = e.buffer;
+            }
+            this.digest(state);
         });
         Player.on('@{when.history.change}', this.render.bind(this));
         Player.on('@{when.song.change}', e => {
@@ -104,14 +111,17 @@ export default Magix.View.extend({
     },
     '$doc<keyup>'(e: KeyboardEvent) {
         let active = this.get('active');
-        console.log(e.keyCode);
         if (active) {
             if (e.keyCode == 13) {//enter
                 this['@{toggle.play.state}']();
             } else if (e.keyCode == 80) {//p
                 Player["@{pre.song}"]();
-            } else if (e.keyCode == 78) {
+            } else if (e.keyCode == 78) {//n
                 Player["@{next.song}"](active.channel_id);
+            } else if (e.keyCode == 67) {//c
+                this.digest({
+                    cshow: !this.get('cshow')
+                });
             }
         }
     }

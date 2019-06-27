@@ -12,9 +12,6 @@ export default Magix.View.extend({
             list: List
         });
     },
-    assign() {
-        return false;
-    },
     render() {
         let { params } = Magix.Router.parse();
         let tab = params.c;

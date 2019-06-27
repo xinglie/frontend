@@ -10,13 +10,16 @@
             <div class="channel-title" mx-click="@{toggle.channels}()">
                 分类：{{=active.name}}
             </div>
-            <marquee class="scroll-title" scrollamount="2">
+            <marquee class="scroll-title" scrollamount="1">
                 {{=song.title}}-{{=song.artist}}
             </marquee>
         </div>
         <div class="player-ctrls">
             <div class="clearfix player-btns">
                 <i class="iconfont player-btn r180{{if !undo}} player-btn-disabled{{/if}}" mx-click="{{@undo}}?@{pre.song}()" title="{{=ptip}}">&#xe600;</i>
+                {{if buffer}}
+                <i class="iconfont player-btn player-buffer">&#xe613;</i>
+                {{else}}
                 <i class="iconfont player-btn" mx-click="@{update.status}()"　title="点击{{if play}}暂停{{else}}播放{{/if}}">
                     {{if play}}
                     &#xe62d;
@@ -24,6 +27,7 @@
                     &#xe6aa;
                     {{/if}}
                 </i>
+                {{/if}}
                 <i class="iconfont player-btn" mx-click="@{next.song}()" title="{{=ntip}}">&#xe600;</i>
                 <i class="iconfont player-btn player-mode" mx-click="@{update.mode}()" title="正在{{if mode=='rdm'}}随机播放{{else}}单曲循环{{/if}}">
                     {{if mode=='rdm'}}
@@ -35,7 +39,7 @@
                 <span class="player-tip">
                     {{if error}}
                     {{=error}}
-                    {{else if !play}}
+                    {{else if !play&&!buffer}}
                     点击播放按钮继续
                     {{/if}}
                 </span>

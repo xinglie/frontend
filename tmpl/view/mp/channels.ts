@@ -7,7 +7,7 @@ import Player from './player';
 export default Magix.View.extend({
     tmpl: '@channels.html',
     async render() {
-        let marker = this.getMarker();
+        let marker = this.getMarker('@{render}');
         try {
             let data = await Player["@{get.channels.with.active}"]();
             if (marker()) {
@@ -21,12 +21,12 @@ export default Magix.View.extend({
             }
         }
     },
-    assign() {
-        return false
-    },
     '@{update.channel}<click>'(e: Magix5.MagixMouseEvent) {
         let { channel } = e.params;
         Magix.dispatch(this.root, 'change', {
+            channel
+        });
+        this.digest({
             channel
         });
     }

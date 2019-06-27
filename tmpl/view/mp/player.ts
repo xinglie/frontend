@@ -9,8 +9,13 @@ interface SongDesc {
     title: string
     url: string
 }
+interface State {
+    play: boolean
+    buffer: boolean
+}
 let RedoList: SongDesc[] = [];
 let UndoList: SongDesc[] = [];
+let SongLyricCache = new Magix.Cache(200, 50);
 export default Object.assign({
     '@{fetch.channels}'() {
         return fetch(`${APIHost}/getChannels.php`).then(r => r.json());
@@ -19,7 +24,16 @@ export default Object.assign({
         return fetch(`${APIHost}/getSong.php?channel=${channelId}`).then(r => r.json());
     },
     '@{fetch.song.lyric}'(songId) {
-        return fetch(`${APIHost}/getLyric.php?sid=${songId}`).then(r => r.json());
+        let url = `${APIHost}/getLyric.php?sid=${songId}`;
+        if (SongLyricCache.has(url)) {
+            //console.log('get song lyric from cahce', songId);
+            return Promise.resolve(SongLyricCache.get(url));
+        }
+        return fetch(url).then(r => r.json()).then(j => {
+            //console.log(j);
+            SongLyricCache.set(url, j);
+            return Promise.resolve(j);
+        });
     },
     async '@{get.channels.with.active}'() {
         let { channels } = await this['@{fetch.channels}']();
@@ -27,20 +41,72 @@ export default Object.assign({
         return {
             active,
             channels
+        };
+    },
+    '@{update.state}'(state: State) {
+        if (this['@{core.audio}']) {
+            clearTimeout(this['@{update.state.timer}']);
+            let old = this['@{player.play.state}'];
+            if (!old) {
+                old = {
+                    play: false,
+                    buffer: false
+                };
+            }
+            let checks = ['play', 'buffer'];
+            for (let c of checks) {
+                if (!Magix.has(state, c)) {
+                    state[c] = old[c];
+                }
+            }
+            this['@{player.play.state}'] = state;
+            this['@{update.state.timer}'] = setTimeout(() => {
+                let f = false;
+                old = this['@{player.fired.play.state}'];
+                if (old) {
+                    for (let c of checks) {
+                        if (old[c] != state[c]) {
+                            f = true;
+                            break;
+                        }
+                    }
+                } else {
+                    f = true;
+                }
+                if (f) {
+                    this.fire('@{when.status.change}', this['@{player.fired.play.state}'] = state);
+                }
+            }, 50);
         }
     },
     '@{init.audio}'() {
         if (!this['@{core.audio}']) {
             let audio = new Audio();
             let timer;
+
             audio.onerror = () => {
+                //take a break;
                 clearTimeout(timer);
                 timer = setTimeout(() => {
-                    this.fire('@{when.song.error}');
+                    this.fire('@{when.song.end}');
                 }, 2e3);
             };
             audio.onended = () => {
-                this.fire('@{when.song.end}');
+                //take a break;
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    this.fire('@{when.song.end}');
+                }, 1e3);
+            };
+            audio.oncanplay = () => {
+                this['@{update.state}']({
+                    buffer: false
+                });
+            };
+            audio.onwaiting = () => {
+                this['@{update.state}']({
+                    buffer: true
+                });
             };
             audio.ontimeupdate = () => {
                 let buffered = audio.buffered;
@@ -55,12 +121,12 @@ export default Object.assign({
                 });
             };
             audio.onplay = () => {
-                this.fire('@{when.status.change}', {
+                this['@{update.state}']({
                     play: true
                 });
             };
             audio.onpause = () => {
-                this.fire('@{when.status.change}', {
+                this['@{update.state}']({
                     play: audio.ended
                 });
             };
@@ -99,7 +165,7 @@ export default Object.assign({
         this['@{core.audio}'].src = song.url;
         let p = this['@{core.audio}'].play();
         p.catch(e => {
-            console.log('click play button');
+            //console.log('click play button');
         });
         this['@{song.info}'] = song;
     },
@@ -121,18 +187,32 @@ export default Object.assign({
         }
     },
     async '@{next.song}'(channelId, forceRandom?: boolean) {
+        this['@{set.pause}']();
+        this['@{update.state}']({
+            buffer: true
+        });
         if (!forceRandom) {
             forceRandom = RedoList.length == 0;
         }
         if (forceRandom) {
             try {
+                let isLast = Magix.getMarker(this, '@{next.song}');
                 let { song } = await this["@{fetch.random.song}"](channelId);
-                this['@{play.song}'](song[0]);
-                this.fire('@{when.song.change}', {
-                    song: song[0]
-                });
+                if (isLast()) {
+                    //console.log('isLast');
+                    this['@{play.song}'](song[0]);
+                    this.fire('@{when.song.change}', {
+                        song: song[0]
+                    });
+                } else {
+                    //console.warn('ignore pre');
+                }
             } catch{
-                this['@{next.song}'](channelId, forceRandom);
+                clearTimeout(this['@{next.song.timer}']);
+                this['@{next.song.timer}'] = setTimeout(() => {
+                    //console.log('auto play error,take a rest before next');
+                    this['@{next.song}'](channelId, forceRandom);
+                }, 2e3);
             }
         } else {
             let song = RedoList.pop();
@@ -145,6 +225,10 @@ export default Object.assign({
     },
     '@{pre.song}'() {
         if (UndoList.length > 1) {
+            this['@{set.pause}']();
+            this['@{update.state}']({
+                buffer: true
+            });
             let song = UndoList.pop();
             RedoList.push(song);
             song = UndoList[UndoList.length - 1];
@@ -158,17 +242,25 @@ export default Object.assign({
         return UndoList.length > 1;
     },
     '@{set.volume}'(v) {
-        this['@{core.audio}'].volume = v;
+        if (this['@{core.audio}']) {
+            this['@{core.audio}'].volume = v;
+        }
     },
     '@{set.pause}'() {
-        this['@{core.audio}'].pause();
+        if (this['@{core.audio}']) {
+            this['@{core.audio}'].pause();
+        }
     },
     '@{set.play}'() {
-        this['@{core.audio}'].play();
+        if (this['@{core.audio}']) {
+            this['@{core.audio}'].play();
+        }
     },
     '@{replay}'() {
-        this['@{core.audio}'].currentTime = 0;
-        this['@{core.audio}'].play();
+        if (this['@{core.audio}']) {
+            this['@{core.audio}'].currentTime = 0;
+            this['@{core.audio}'].play();
+        }
     },
     '@{get.pre.tip}'() {
         if (UndoList.length > 1) {

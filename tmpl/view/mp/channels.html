@@ -1,10 +1,12 @@
-<div class="clearfix">
+<div class="clearfix channels">
     {{if error}}
         {{=error}}
     {{else}}
-    {{each channels as c idx}}
-        <div class="channel" mx-click="@{update.channel}({channel:{{@c}}})">
-            <img class="channel-cover" src="{{=c.cover_small}}"/>
+    {{each channels as c}}
+        <div class="channel{{if channel==c}} channel-active{{/if}}" mx-click="{{channel!=c}}?@{update.channel}({channel:{{@c}}})">
+            <div class="channel-cover-wrap">
+                <img class="channel-cover" src="{{=c.cover_small}}"/>
+            </div>
             <div>
                 {{=c.name}}
             </div>

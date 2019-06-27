@@ -3,9 +3,10 @@
     user-select: none;
 }
 .tracker{
-    height: 2px;
+    height: 4px;
     background: #fff;
     cursor: pointer;
+    border-radius:2px;
 }
 .pointer{
     width:8px;
@@ -14,26 +15,19 @@
     background: #fff;
     position: absolute;
     cursor: pointer;
-    top:-3px;
-    margin-left:-4px;
-}
-.pointer::before{
-    content:' ';
-    width:12px;
-    height:12px;
-    left:-2px;
-    position: absolute;
     top:-2px;
-    border-radius: 50%;
-    background: #fff6;
+    margin-left:-4px;
+    box-shadow: 0 0 0 2px #fff6;
 }
 .passed{
     background:#88cbfb;
-    height: 2px;
+    height: 4px;
     position: absolute;
+    border-radius:2px;
     top:0;
 }
 .buffer{
     background:#999;
-    height: 2px;
+    border-radius:2px;
+    height: 4px;
 }
