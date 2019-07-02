@@ -11,8 +11,12 @@ export default Magix.View.extend({
         this.assign(data);
     },
     assign(data) {
-        this.set(data);
-        return true;
+        if (!this['@{dragging}']) {
+            this.set(data);
+            return true;
+        }
+        console.log('prevent');
+        return false;
     },
     render() {
         this.digest();
@@ -30,6 +34,7 @@ export default Magix.View.extend({
     '@{start.drag}<mousedown>'(e: Magix5.MagixMouseEvent) {
         let bound = Magix.node('t_' + this.id).getBoundingClientRect();
         let v = this.get('value') || 0;
+        this['@{dragging}'] = 1;
         this['@{drag.drop}'](e, (ev) => {
             let diff = ev.pageX - e.pageX;
             let p = diff / bound.width + v;
@@ -45,6 +50,7 @@ export default Magix.View.extend({
             Magix.dispatch(this.root, 'change', {
                 percent: this.get('value')
             });
+            delete this['@{dragging}'];
         });
     }
 });

@@ -2,8 +2,8 @@
 version:5.0.1 Licensed MIT
 author:kooboy_li@163.com
 loader:module
-enables:mixins,router,routerHash,rich,richView,mxevent,marker
-optionals:routerState,routerTip,routerTipLockUrl,richVframe,recast,xml,customTags,checkAttr,service,state,seajs
+enables:mixins,router,routerHash,rich,richView,mxevent
+optionals:routerState,routerTip,routerTipLockUrl,richVframe,recast,xml,customTags,checkAttr,webc,service,state,seajs
 */
 if (typeof DEBUG == 'undefined') window.DEBUG = true;
 //VARS
@@ -68,6 +68,22 @@ let NodeIn = (a, b, r?) => {
         }
     }
     return r;
+};
+let Mark = (me, key, host?, m?, k?) => {
+    k = Spliter + 'a';
+    if (!me[k]) {
+        k = Spliter + 'b';
+        host = me[k] || (me[k] = {});
+        if (!Has(host, key)) {
+            host[key] = 0;
+        }
+        m = ++host[key];
+    }
+    return t => (t = me[k], t && m === t[key]);
+};
+let Unmark = me => {
+    me[Spliter + 'b'] = 0;
+    me[Spliter + 'a'] = 1;
 };
 let {
     assign: Assign,
@@ -761,7 +777,7 @@ let View_IsObserveChanged = view => {
 let Dispatcher_Update = (vframe, view?, cs?, c?) => {
     if (vframe && vframe['a'] != Dispatcher_UpdateTag &&
         (view = vframe['b']) &&
-        view['b'] > 1) {
+        view['b']) {
         if (View_IsObserveChanged(view)) { //检测view所关注的相应的参数是否发生了变化
             //CallFunction(view['c'], Empty_Array, view);
             view['c']();
@@ -865,6 +881,9 @@ function Vframe(root, pId?) {
     Vframe_AddVframe(vfId, me);
 }
 Assign(Vframe, {
+    root() {
+        return Vframe_RootVframe;
+    },
     all() {
         return Vframe_Vframes;
     },
@@ -959,7 +978,8 @@ Assign(Vframe[Prototype], {
         if (v) {
             me.unmountZone();
             me['b'] = 0; //unmountView时，尽可能早的删除vframe上的$v对象，防止$v销毁时，再调用该 vfrmae的类似unmountZone方法引起的多次created
-            if (v['b'] > 0) {
+            if (v['b']) {
+                Unmark(v);
                 v['b'] = 0;
                 
                 v.fire('destroy');
@@ -967,7 +987,6 @@ Assign(Vframe[Prototype], {
                 View_DelegateEvents(v, 1);
                 v.owner = v.root = Null;
             }
-            v['b']--;
             if (root && me['f'] /*&&!keepPreHTML*/) { //如果$v本身是没有模板的，也需要把节点恢复到之前的状态上：只有保留模板且$v有模板的情况下，这条if才不执行，否则均需要恢复节点的html，即$v安装前什么样，销毁后把节点恢复到安装前的情况
                 SetInnerHTML(root, me['g']);
             }
@@ -1212,12 +1231,14 @@ let Body_FindVframeInfo = (current, eventType) => {
 
 let Body_DOMEventProcessor = domEvent => {
     let { target, type } = domEvent;
+    
     let eventInfos;
     let ignore;
     let vframe, view, eventName, fn;
     let lastVfId;
     let params, arr = [];
-    while (target != Doc_Body) {
+    while (target &&
+        target.nodeType == 1) {
         if (domEvent.cancelBubble ||
             (ignore = target['d']) && ignore[type]) {
             break;
@@ -1264,7 +1285,7 @@ let Body_DOMEventProcessor = domEvent => {
                 }
             }
         }
-        target = target.parentNode || Doc_Body;
+        target = target.parentNode;
     }
     for (lastVfId of arr) {
         ignore = lastVfId['d'] || (lastVfId['d'] = {});
@@ -1335,7 +1356,7 @@ let Updater_Ref = ($$, v, k) => {
     return k;
 };
 let Updater_Digest = (view , tmpl) => {
-    if (view['b'] > 0 &&
+    if (view['b'] &&
         (tmpl = view.tmpl)) {
         let keys = view['j'],
             viewId = view.id,
@@ -1372,7 +1393,9 @@ let Updater_Digest = (view , tmpl) => {
                 */
                 tmpl = ref['b'] || !view['h'];
                 for (vdom of ref['a']) {
-                    CallFunction(vdom['c'], Empty_Array, vdom);
+                    
+                    CallFunction(View_CheckAssign, [vdom]);
+                    
                 }
                 if (tmpl) {
                     view.endUpdate();
@@ -1654,7 +1677,7 @@ let V_SetChildNodes = (realNode, lastVDOM, newVDOM, ref, vframe, keys) => {
         SetInnerHTML(realNode, newVDOM['c']);
         
         if (DEBUG) {
-            if (!vframe.root.parentNode) {
+            if (vframe.root.nodeType == 1 && !vframe.root.parentNode) {
                 throw new Error(`unsupport mount "${vframe.path}". the root element is removed by other views`);
             }
             let pId = vframe.pId;
@@ -1849,26 +1872,16 @@ let processMixinsSameEvent = (exist, additional, temp?) => {
     return temp;
 };
 
-let View_WrapMethod = (prop, fName, short, fn?, me?) => {
-    if (prop[fName] != prop[short]) {
-        fn = prop[fName];
-        prop[fName] = prop[short] = function (...args) {
-            me = this;
-            
-            if (me['n']) {
-                me['n']--;
-            }
-            
-            if (me['b'] > 0 && !me['n']) { //signature
-                me['b']++;
-                
-                me.fire('rendercall');
-                
-                ToTry(fn, args, me);
-            }
-        };
+
+let View_CheckAssign = view => {
+    if (view['n']) {
+        view['n']--;
+    }
+    if (view['b'] && !view['n']) { //signature
+        ToTry(view['c'], Empty_Array, view);
     }
 };
+
 let View_DelegateEvents = (me, destroy) => {
     let e, { 'o': eventsObject,
         'i': selectorObject,
@@ -2022,8 +2035,7 @@ let View_Prepare = oView => {
                 }
             }
         }
-        //console.log(prop);
-        View_WrapMethod(prop, 'render', 'c');
+        prop['c'] = prop.render;
         prop['o'] = eventsObject;
         prop['p'] = eventsList;
         prop['i'] = selectorObject;
@@ -2039,6 +2051,7 @@ function View(id, root, owner, ops, me) {
     me.root = root;
     me.owner = owner;
     me.id = id;
+    me[Spliter] = id;
     
     me['a'] = {
         'c': []
@@ -2070,7 +2083,7 @@ Assign(View[Prototype], MxEvent, {
     
     endUpdate(node, me, o, f) {
         me = this;
-        if (me['b'] > 0) {
+        if (me['b']) {
             
             f = me['h'];
             
@@ -2083,16 +2096,6 @@ Assign(View[Prototype], MxEvent, {
             }
             
         }
-    },
-    getMarker(key, k, m) {
-        let me = this,
-            s = me['b'];
-        k = Spliter + key;
-        if (!Has(me, k)) {
-            me[k] = 0;
-        }
-        m = ++me[k];
-        return () => s > 0 && s == me['b'] && m == me[k];
     },
     
     observeLocation(params, isObservePath) {
@@ -2255,22 +2258,7 @@ let Magix = {
     
     Router,
     
-    
-    getMarker(me, key, m, k) {
-        if (DEBUG) {
-            if (me.owner && me.owner.constructor == Vframe) {
-                console.error('use this.getMarker at ' + me.owner.path + ' instead of Magix.getMarker');
-                return;
-            }
-        }
-        k = Spliter + key;
-        if (!Has(me, k)) {
-            me[k] = 0;
-        }
-        m = ++me[k];
-        return () => m == me[k];
-    },
-    
+    mark: Mark,
     node: GetById,
     task: CallFunction
 };
@@ -2841,6 +2829,10 @@ let Magix = {
         vframe: Vframe
     }> {
         /**
+         * 获取根vframe
+         */
+        root(): Vframe | null
+        /**
          * 获取当前页面上所有的vframe
          */
         all(): {
@@ -2850,12 +2842,12 @@ let Magix = {
          * 根据id获取vframe
          * @param id
          */
-        byId(id: string): Vframe
+        byId(id: string): Vframe | null
         /**
          * 根据节点获取vframe
          * @param node 节点对象
          */
-        byNode(node: HTMLElement): Vframe
+        byNode(node: HTMLElement): Vframe | null
 
         /**
          * 当vframe创建并添加到管理对象上时触发
@@ -2938,11 +2930,6 @@ let Magix = {
          */
         endUpdate(node?: HTMLElement): void
         /**
-         * 获取一个更新记号函数
-         * @param key 记号key
-         */
-        getMarker(key: string): () => boolean
-        /**
          * 包装异步回调
          * 为什么要包装？
          * 在单页应用的情况下，一些异步(如setTimeout,ajax等)回调执行时，当前view已经被销毁。如果你的回调中去操作了DOM，
@@ -2994,11 +2981,6 @@ let Magix = {
          * view销毁时触发
          */
         ondestroy: (this: this, e?: TriggerEventDescriptor) => void;
-
-        /**
-         * 当render方法被调用时触发
-         */
-        onrendercall: (this: this, e?: TriggerEventDescriptor) => void;
     }
     /**
      * View类
@@ -3243,14 +3225,17 @@ let Magix = {
          * @param prefix guid的前缀，默认mx-
          */
         guid(prefix?: string): string
-        
         /**
          * 获取异步标识
          * @param host 宿主对象
          * @param key 标识key
          */
-        getMarker(host: object, key: string): () => boolean
-        
+        mark(host: object, key: string): () => boolean
+        /**
+         * 销毁所有异步标识
+         * @param host 宿主对象
+         */
+        unmark(host: object): void
         /**
          * 安排、优化待执行的函数
          * @param fn 执行函数

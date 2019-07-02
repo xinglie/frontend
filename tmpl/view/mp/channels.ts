@@ -7,7 +7,7 @@ import Player from './player';
 export default Magix.View.extend({
     tmpl: '@channels.html',
     async render() {
-        let marker = this.getMarker('@{render}');
+        let marker = Magix.mark(this, '@{render}');
         try {
             let data = await Player["@{get.channels.with.active}"]();
             if (marker()) {

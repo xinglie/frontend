@@ -59,9 +59,20 @@
 .channel-info-img{
     width:56px;
     height:56px;
-    border:solid 1px #777;
+    border:solid 1px #fff;
     margin:2px;
     float: left;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+.channel-info-img-hole{
+    width: 8px;
+    height: 8px;
+    background: #333;
+    border-radius: 50%;
+    margin: 50%;
+    transform: translate(-4px, -4px);
+    box-shadow: 0 0 0px 3px #fffb;
 }
 // .scrollable{
 //     &::-webkit-scrollbar{
@@ -93,7 +104,8 @@
 .channel-title{
     margin:5px 10px 0;
     float: left;
-    width:140px;
+    width:130px;
+    overflow: hidden;
 }
 .channel-title{
     cursor: pointer;
@@ -128,6 +140,14 @@
         transform: rotate(360deg);
     }
 }
+
+.channel-info-img{
+    border-radius: 50%;
+    animation: rotate 8s linear infinite;
+    border-width: 3px;
+    cursor: pointer;
+}
+
 .player-btn{
     font-size: 22px;
     float: left;
@@ -159,14 +179,21 @@
 .player-tracker{
     width:390px;
     float: left;
-    margin-top: 10px;
+    margin-top: 9px;
 }
 .r180{
     transform: rotate(180deg);
 }
 .player-v{
     float: right;
-    margin-right: 90px;
+    margin-right: 51px;
+}
+.player-v-text{
+    font-size: 12px;
+    margin-left: 10px;
+    margin-top: 5px;
+    display: inline-block;
+    width: 21px;
 }
 .player-v-tracker{
     width:80px;
@@ -194,4 +221,26 @@
 }
 .player-mode{
     margin-left: 15px;
+}
+@keyframes m-left{
+    from {
+         transform: translate(0, 0); 
+        }
+    to { 
+        transform: translate(-100%, 0); 
+    }
+}
+.marquee-left{
+    display: inline-block;
+    padding-left: 100%;
+    white-space: nowrap;
+    animation: m-left 20s linear infinite;
+}
+
+.anim-paused{
+    animation-play-state: paused;
+}
+.anim-reset{
+    animation-name: none;
+    padding-left: 0;
 }

@@ -8,7 +8,6 @@ let ClearSelection = (t?: () => Selection) => {
     }
 };
 let DragPrevent = (e) => {
-    console.log(e);
     e.preventDefault();
 };
 let DragMoveEvent = ['mousemove', 'touchmove'];
@@ -24,9 +23,8 @@ export default {
     },
     '@{dd&drag.end}'(e) {
         let me = this;
-        let info = me['@{dd&drag.object}'];
+        let info = me['@{dd&move.proxy}'];
         if (info) {
-            delete me['@{dd&drag.object}'];
             let fn;
             for (fn of DragMoveEvent) {
                 document.removeEventListener(fn, me['@{dd&move.proxy}']);
@@ -38,15 +36,10 @@ export default {
                 document.removeEventListener(fn, DragPrevent);
             }
             window.removeEventListener('blur', me['@{dd&stop.proxy}']);
-            //let node = info['@{dd&node}'];
-            let stop = info['@{dd&stop}'];
-            let iStop = info['@{dd&stop.is.function}'];
-            // if (node.releaseCapture) {
-            //     node.releaseCapture();
-            // } else if (node.releasePointerCapture && e.pointerId) {
-            //     node.releasePointerCapture(e.pointerId);
-            // }
-            if (iStop) {
+
+            delete me['@{dd&move.proxy}'];
+            let stop = me['@{dd&stop.callback}'];
+            if (stop) {
                 stop(e);
             }
         }
@@ -56,25 +49,10 @@ export default {
         me['@{dd&drag.end}']();
         if (e) {
             ClearSelection();
-            //let node = e.eventTarget || e.target;
-            // if (node.setCapture) {
-            //     //node.setCapture();
-            // } else if (node.setPointerCapture && e.pointerId) {
-            //     node.setPointerCapture(e.pointerId);
-            // }
-            me['@{dd&drag.object}'] = {
-                '@{dd&stop}': endCallback,
-                //'@{dd&node}': node,
-                '@{dd&stop.is.function}': !!endCallback
-            };
-            let moveIsFunction = !!moveCallback;
-            me['@{dd&drag.finished}'] = 0;
-            me['@{dd&stop.proxy}'] = e => {
-                me['@{dd&drag.finished}'] = 1;
-                me['@{dd&drag.end}'](e);
-            };
+            me['@{dd&stop.callback}'] = endCallback;
+            me['@{dd&stop.proxy}'] = me['@{dd&drag.end}'].bind(me);
             me['@{dd&move.proxy}'] = e => {
-                if (moveIsFunction) {
+                if (moveCallback) {
                     moveCallback(e);
                 }
             };

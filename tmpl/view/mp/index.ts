@@ -18,9 +18,9 @@ export default Magix.View.extend({
         Player.on('@{when.status.change}', (e) => {
             let state = {} as {
                 play: boolean
-                buffer: boolean
+                buffer: boolean,
+                reset: boolean
             };
-            console.log(e);
             if (Magix.has(e, 'play')) {
                 state.play = e.play;
             }
@@ -29,16 +29,27 @@ export default Magix.View.extend({
             }
             this.digest(state);
         });
-        Player.on('@{when.history.change}', this.render.bind(this));
+        Player.on('@{when.history.change}', () => {
+            this.set({
+                reset: false
+            });
+            this.render();
+        });
         Player.on('@{when.song.change}', e => {
+            console.log('song change', e.song);
             this.digest({
+                reset: true,
                 song: e.song
             });
         })
         this.set({
             cshow: false,
-            volume: 1,
-            mode: 'rdm'
+            reset: true,
+            mode: 'rdm',
+            song: {
+                title: '软件作者',
+                artist: '行列'
+            }
         });
     },
     render() {
@@ -57,13 +68,10 @@ export default Magix.View.extend({
         }
     },
     '@{update.channel}<change>'(e) {
-        this.set({
+        this.digest({
             active: e.channel
         });
         Player["@{next.song}"](e.channel.channel_id, true);
-    },
-    '@{update.volume}<update,change>'(e) {
-        Player["@{set.volume}"](e.percent);
     },
     '@{update.status}<click>'() {
         this['@{toggle.play.state}']();
@@ -80,23 +88,6 @@ export default Magix.View.extend({
     '@{pre.song}<click>'() {
         Player["@{pre.song}"]();
     },
-    '@{toggle.mute}<click>'() {
-        if (Magix.has(this, '@{bak.volume}')) {
-            let v = this['@{bak.volume}'];
-            delete this['@{bak.volume}'];
-            this.digest({
-                volume: v
-            });
-            Player["@{set.volume}"](v);
-        } else {
-            this['@{bak.volume}'] = this.get('volume');
-            let v = 0;
-            this.digest({
-                volume: v
-            });
-            Player["@{set.volume}"](v);
-        }
-    },
     '@{update.mode}<click>'() {
         let mode = this.get('mode');
         if (mode == 'rdm') {
@@ -110,19 +101,24 @@ export default Magix.View.extend({
         }
     },
     '$doc<keyup>'(e: KeyboardEvent) {
-        let active = this.get('active');
-        if (active) {
-            if (e.keyCode == 13) {//enter
+        if (Player["@{can.operate}"]()) {
+            let code = e.keyCode;
+            if (code == 13 ||//enter
+                code == 32) {//space
                 this['@{toggle.play.state}']();
-            } else if (e.keyCode == 80) {//p
+            } else if (code == 80) {//p
                 Player["@{pre.song}"]();
-            } else if (e.keyCode == 78) {//n
+            } else if (code == 78) {//n
+                let active = this.get('active');
                 Player["@{next.song}"](active.channel_id);
-            } else if (e.keyCode == 67) {//c
+            } else if (code == 67) {//c
                 this.digest({
                     cshow: !this.get('cshow')
                 });
             }
         }
+    },
+    '$doc<visibilitychange>'() {
+        Player["@{set.eco}"](document.hidden);
     }
 });

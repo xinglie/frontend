@@ -79,13 +79,32 @@ export default Object.assign({
             }, 50);
         }
     },
+    '@{update.time.and.buffer}'() {
+        let audio = this['@{core.audio}'];
+        if (audio) {
+            let buffered = audio.buffered;
+            let p = 0;
+            if (buffered.length) {
+                p = buffered.end(buffered.length - 1) / audio.duration;
+            }
+            this.fire('@{when.song.time.update}', {
+                duration: audio.duration,
+                current: audio.currentTime,
+                buffered: p
+            });
+        }
+    },
     '@{init.audio}'() {
         if (!this['@{core.audio}']) {
             let audio = new Audio();
             let timer;
-
+            audio.onprogress = () => {
+                console.log('from propgress');
+                this['@{update.time.and.buffer}']();
+            };
             audio.onerror = () => {
                 //take a break;
+                console.log('song error', audio.src);
                 clearTimeout(timer);
                 timer = setTimeout(() => {
                     this.fire('@{when.song.end}');
@@ -93,6 +112,8 @@ export default Object.assign({
             };
             audio.onended = () => {
                 //take a break;
+                console.clear();
+                console.log('song end');
                 clearTimeout(timer);
                 timer = setTimeout(() => {
                     this.fire('@{when.song.end}');
@@ -109,16 +130,11 @@ export default Object.assign({
                 });
             };
             audio.ontimeupdate = () => {
-                let buffered = audio.buffered;
-                let p = 0;
-                if (buffered.length) {
-                    p = buffered.end(buffered.length - 1) / audio.duration;
+                if (!this['@{is.eco}']) {
+                    this['@{update.time.and.buffer}']();
+                } else {
+                    console.log('eco');
                 }
-                this.fire('@{when.song.time.update}', {
-                    duration: audio.duration,
-                    current: audio.currentTime,
-                    buffered: p
-                });
             };
             audio.onplay = () => {
                 this['@{update.state}']({
@@ -170,21 +186,30 @@ export default Object.assign({
         this['@{song.info}'] = song;
     },
     '@{seek.time}'(time) {
-        let seekable = this['@{core.audio}'].seekable;
-        let len = seekable.length;
-        if (len) {
-            let start = seekable.start(0);
-            let end = seekable.end(len - 1);
-            if (time >= start && time <= end) {
-                this['@{core.audio}'].currentTime = time;
-            }
-        } else {
-            let buffered = this['@{core.audio}'].buffered;
-            if (buffered.length) {
-                let max = buffered.end(buffered.length - 1);
-                this['@{core.audio}'].currentTime = max;
+        if (this['@{core.audio}']) {
+            let seekable = this['@{core.audio}'].seekable;
+            let len = seekable.length;
+            if (len) {
+                let start = seekable.start(0);
+                let end = seekable.end(len - 1);
+                if (time >= start && time <= end) {
+                    this['@{core.audio}'].currentTime = time;
+                }
+            } else {
+                let buffered = this['@{core.audio}'].buffered;
+                if (buffered.length) {
+                    let max = buffered.end(buffered.length - 1);
+                    this['@{core.audio}'].currentTime = max;
+                }
             }
         }
+    },
+    '@{delay.next.song}'(channelId, forceRandom, delay) {
+        clearTimeout(this['@{next.song.timer}']);
+        this['@{next.song.timer}'] = setTimeout(() => {
+            //console.log('auto play error,take a rest before next');
+            this['@{next.song}'](channelId, forceRandom);
+        }, delay);
     },
     async '@{next.song}'(channelId, forceRandom?: boolean) {
         this['@{set.pause}']();
@@ -196,23 +221,26 @@ export default Object.assign({
         }
         if (forceRandom) {
             try {
-                let isLast = Magix.getMarker(this, '@{next.song}');
+                let isLast = Magix.mark(this, '@{next.song}');
                 let { song } = await this["@{fetch.random.song}"](channelId);
                 if (isLast()) {
-                    //console.log('isLast');
-                    this['@{play.song}'](song[0]);
-                    this.fire('@{when.song.change}', {
-                        song: song[0]
-                    });
+                    console.log('isLast');
+                    let single = song[0] as SongDesc;
+                    if (single.url) {
+                        this.fire('@{when.song.change}', {
+                            song: single
+                        });
+                        this['@{play.song}'](single);
+                    } else {
+                        console.log('song has no url', song);
+                        this['@{delay.next.song}'](channelId, forceRandom, 50);
+                    }
                 } else {
-                    //console.warn('ignore pre');
+                    console.warn('ignore pre', song);
                 }
-            } catch{
-                clearTimeout(this['@{next.song.timer}']);
-                this['@{next.song.timer}'] = setTimeout(() => {
-                    //console.log('auto play error,take a rest before next');
-                    this['@{next.song}'](channelId, forceRandom);
-                }, 2e3);
+            } catch (ex) {
+                console.log('next song error', ex);
+                this['@{delay.next.song}'](channelId, forceRandom, 2e3);
             }
         } else {
             let song = RedoList.pop();
@@ -238,6 +266,9 @@ export default Object.assign({
             });
         }
     },
+    '@{can.operate}'() {
+        return this['@{core.audio}'];
+    },
     '@{can.undo}'() {
         return UndoList.length > 1;
     },
@@ -255,6 +286,14 @@ export default Object.assign({
         if (this['@{core.audio}']) {
             this['@{core.audio}'].play();
         }
+    },
+    '@{set.mute}'() {
+        let ca = this['@{core.audio}'];
+        if (ca) {
+            ca.muted = !ca.muted;
+            return ca.muted;
+        }
+        return false;
     },
     '@{replay}'() {
         if (this['@{core.audio}']) {
@@ -275,5 +314,11 @@ export default Object.assign({
             return '下一首：' + song.title + '-' + song.artist;
         }
         return '下一首：随机歌曲';
+    },
+    '@{set.eco}'(eco) {
+        this['@{is.eco}'] = eco;
+        if (!eco) {
+            this['@{update.time.and.buffer}']();
+        }
     }
 }, Magix.Event);

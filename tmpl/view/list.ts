@@ -17,13 +17,15 @@ export default Magix.View.extend({
             tab = List[0].key;
         }
         bodyStyle.cursor = 'wait';
-        let latestMarker = this.getMarker('@{render}');
+        let latestMarker = Magix.mark(this, '@{render}');
         Magix.use(`@../data/${tab}`, list => {
             if (latestMarker()) {
                 this.digest({
                     list: list || []
                 });
                 bodyStyle.cursor = 'default';
+            } else {
+                console.log('ignore');
             }
         });
     }

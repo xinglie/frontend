@@ -46,7 +46,7 @@ let ParseLyric = lyric => {
             for (let i = 0; i <= max; i++) {
                 t += time[i] * Math.pow(60, max - i);
             }
-            t += offset;
+            t -= offset;
             if (!isNaN(t)) {
                 lyrics.push({
                     time: t,
@@ -55,6 +55,13 @@ let ParseLyric = lyric => {
             }
         });
     });
+    //补充一下，让一行文字居中显示
+    if (lyrics.length < 2) {
+        lyrics.push({
+            time: -1,
+            text: ''
+        });
+    }
     lyrics = lyrics.sort(Sort);
     //console.log(lyrics,metas);
     return lyrics;
@@ -81,7 +88,7 @@ export default Magix.View.extend({
         this['@{scroll.lyric}'](0);
     },
     async '@{update.lyric}'(sId) {
-        let marker = this.getMarker('@{update.lyric}');
+        let marker = Magix.mark(this, '@{update.lyric}');
         try {
             let { lyric } = await Player["@{fetch.song.lyric}"](sId);
             if (marker()) {
