@@ -533,13 +533,7 @@ let MxEvent = {
 
 
 let Router_UpdateHash = (path, replace?) => {
-    if (path != Router_WinLoc.hash) {
-        if (replace) {
-            Router_WinLoc.replace(Hash_Key + path);
-        } else {
-            Router_WinLoc.hash = path;
-        }
-    }
+    Router_WinLoc[replace ? 'replace' : 'assign'](Hash_Key + path);
 };
 let Router_Update = (path, params, loc, replace, silent, lQuery) => {
     path = ToUri(path, params, lQuery);
@@ -805,7 +799,7 @@ let Vframe_Vframes = {};
 let Vframe_TranslateQuery = (pId, src, params, pVf?) => {
     if (src.indexOf(Spliter) > 0 &&
         (pVf = Vframe_Vframes[pId])) {
-        TranslateData(pVf['b']['d'], params);
+        TranslateData(pVf['c'], params);
     }
 };
 let Vframe_Root = (rootId?, e?) => {
@@ -844,7 +838,7 @@ let Vframe_RemoveVframe = (id, vframe?) => {
             vframe
         });
         
-        vframe.id = vframe.root = vframe.pId = vframe['c'] = Null; //清除引用,防止被移除的view内部通过setTimeout之类的异步操作有关的界面，影响真正渲染的view
+        vframe.id = vframe.root = vframe.pId = vframe['d'] = Null; //清除引用,防止被移除的view内部通过setTimeout之类的异步操作有关的界面，影响真正渲染的view
         if (DEBUG) {
             let nodes = Doc_Document.querySelectorAll('#' + id);
             if (nodes.length > 1) {
@@ -855,7 +849,7 @@ let Vframe_RemoveVframe = (id, vframe?) => {
 };
 
 let Vframe_RunInvokes = (vf, list, o) => {
-    list = vf['d']; //invokeList
+    list = vf['e']; //invokeList
     while (list.length) {
         o = list.shift();
         if (!o.r) { //remove
@@ -873,11 +867,12 @@ function Vframe(root, pId?) {
     let vfId = Vframe_GetVfId(root);
     me.id = vfId;
     me.root = root;
-    me['e'] = 1; //signature
-    me['c'] = {}; //childrenMap
+    me['f'] = 1; //signature
+    me['d'] = {}; //childrenMap
     me.pId = pId; 
-    me['d'] = []; //invokeList
+    me['e'] = []; //invokeList
     
+    me['c'] = {};
     Vframe_AddVframe(vfId, me);
 }
 Assign(Vframe, {
@@ -900,9 +895,9 @@ Assign(Vframe[Prototype], {
         let me = this;
         let { id, root, pId } = me;
         let po, sign, view, params, ctors;
-        if (!me['f'] && root) { //alter
-            me['f'] = 1;
-            me['g'] = root.innerHTML;
+        if (!me['g'] && root) { //alter
+            me['g'] = 1;
+            me['h'] = root.innerHTML;
         }
         me.unmountView();
         if (root && viewPath) {
@@ -911,11 +906,11 @@ Assign(Vframe[Prototype], {
             me[Path] = viewPath;
             params = po[Params];
             Vframe_TranslateQuery(pId, viewPath, params);
-            me['h'] = view;
+            me['i'] = view;
             Assign(params, viewInitParams);
-            sign = me['e'];
+            sign = me['f'];
             Async_Require(view, TView => {
-                if (sign == me['e']) { //有可能在view载入后，vframe已经卸载了
+                if (sign == me['f']) { //有可能在view载入后，vframe已经卸载了
                     if (!TView) {
                         return Mx_Cfg.error(Error(`${id} cannot load:${view}`));
                     }
@@ -928,11 +923,10 @@ Assign(Vframe[Prototype], {
                             id: 1,
                             owner: 1,
                             'a': 1,
-                            'e': 1,
-                            'b': 1,
-                            'f': 1,
                             'd': 1,
-                            'g': 1
+                            'b': 1,
+                            'e': 1,
+                            'f': 1
                         };
                         for (let p in view) {
                             if (Has(view, p) && viewProto[p]) {
@@ -957,8 +951,8 @@ Assign(Vframe[Prototype], {
                     CallFunction(() => {
                         view['c']();
                         if (!view.tmpl) { //无模板
-                            me['f'] = 0; //不会修改节点，因此销毁时不还原
-                            if (!view['h']) {
+                            me['g'] = 0; //不会修改节点，因此销毁时不还原
+                            if (!view['g']) {
                                 view.endUpdate();
                             }
                         }
@@ -974,7 +968,7 @@ Assign(Vframe[Prototype], {
     unmountView() {
         let me = this;
         let { 'b': v, root } = me;
-        me['d'] = [];
+        me['e'] = [];
         if (v) {
             me.unmountZone();
             me['b'] = 0; //unmountView时，尽可能早的删除vframe上的$v对象，防止$v销毁时，再调用该 vfrmae的类似unmountZone方法引起的多次created
@@ -987,20 +981,20 @@ Assign(Vframe[Prototype], {
                 View_DelegateEvents(v, 1);
                 v.owner = v.root = Null;
             }
-            if (root && me['f'] /*&&!keepPreHTML*/) { //如果$v本身是没有模板的，也需要把节点恢复到之前的状态上：只有保留模板且$v有模板的情况下，这条if才不执行，否则均需要恢复节点的html，即$v安装前什么样，销毁后把节点恢复到安装前的情况
-                SetInnerHTML(root, me['g']);
+            if (root && me['g'] /*&&!keepPreHTML*/) { //如果$v本身是没有模板的，也需要把节点恢复到之前的状态上：只有保留模板且$v有模板的情况下，这条if才不执行，否则均需要恢复节点的html，即$v安装前什么样，销毁后把节点恢复到安装前的情况
+                SetInnerHTML(root, me['h']);
             }
         }
-        me['e']++; //增加signature，阻止相应的回调，见mountView
+        me['f']++; //增加signature，阻止相应的回调，见mountView
     },
     mountVframe(node, viewPath, viewInitParams) {
         let me = this,
-            vf, id = me.id, c = me['c'];
+            vf, id = me.id, c = me['d'];
         let vfId = Vframe_GetVfId(node);
         vf = Vframe_Vframes[vfId];
         if (!vf) {
             if (!Has(c, vfId)) { //childrenMap,当前子vframe不包含这个id
-                me['i'] = 0; //childrenList 清空缓存的子列表
+                me['j'] = 0; //childrenList 清空缓存的子列表
             }
             c[vfId] = vfId; //map
             vf = new Vframe(node, id);
@@ -1027,7 +1021,7 @@ Assign(Vframe[Prototype], {
             不过就展现来讲，一般是不会出现嵌套的情况，出现的话，把里面有层级的vframe都挂到body上也未尝不可，比如brix2.0
          */
 
-        //me['j'] = 1; //hold fire creted
+        //me['k'] = 1; //hold fire creted
         //me.unmountZone(zoneId, 1); 不去清理，详情见：https://github.com/thx/magix/issues/27
 
         for (it of vframes) {
@@ -1036,28 +1030,28 @@ Assign(Vframe[Prototype], {
                 me.mountVframe(it, GetAttribute(it, MX_View));
             }
         }
-        //me['j'] = 0;
+        //me['k'] = 0;
     },
     unmountVframe(node, isVframeId) { //inner 标识是否是由内部调用，外部不应该传递该参数
         let me = this,
             vf, pId;
-        node = node ? me['c'][isVframeId ? node : node['b']] : me.id;
+        node = node ? me['d'][isVframeId ? node : node['b']] : me.id;
         vf = Vframe_Vframes[node];
         if (vf) {
             vf.unmountView();
             pId = vf.pId;
             Vframe_RemoveVframe(node);
             vf = Vframe_Vframes[pId];
-            if (vf && Has(vf['c'], node)) { //childrenMap
-                delete vf['c'][node]; //childrenMap
-                vf['i'] = 0;
+            if (vf && Has(vf['d'], node)) { //childrenMap
+                delete vf['d'][node]; //childrenMap
+                vf['j'] = 0;
             }
         }
     },
     unmountZone(root) {
         let me = this;
         let p, vf, unmount;
-        for (p in me['c']) {
+        for (p in me['d']) {
             if (root) {
                 vf = Vframe_Vframes[p];
                 unmount = vf && NodeIn(vf.root, root);
@@ -1072,7 +1066,7 @@ Assign(Vframe[Prototype], {
     
     children(me) {
         me = this;
-        return me['i'] || (me['i'] = Keys(me['c']));
+        return me['j'] || (me['j'] = Keys(me['d']));
     },
     
     
@@ -1190,7 +1184,7 @@ let Body_FindVframeInfo = (current, eventType) => {
             do {
                 vf = Vframe_Vframes[selectorVfId];
                 if (vf && (view = vf['b'])) {
-                    selectorObject = view['i'];
+                    selectorObject = view['h'];
                     eventSelector = selectorObject[eventType];
                     if (eventSelector) {
                         for (begin = eventSelector.length; begin--;) {
@@ -1260,12 +1254,12 @@ let Body_DOMEventProcessor = domEvent => {
                 vframe = Vframe_Vframes[v];
                 view = vframe && vframe['b'];
                 if (view) {
-                    if (view['h']) {
+                    if (view['g']) {
                         eventName = n + Spliter + type;
                         fn = view[eventName];
                         if (fn) {
                             domEvent.eventTarget = target;
-                            params = i ? ParseExpr(i, view['d']) : Body_Empty_Object;
+                            params = i ? ParseExpr(i, vframe['c']) : Body_Empty_Object;
                             domEvent[Params] = params;
                             ToTry(fn, domEvent, view);
                         }
@@ -1358,17 +1352,17 @@ let Updater_Ref = ($$, v, k) => {
 let Updater_Digest = (view , tmpl) => {
     if (view['b'] &&
         (tmpl = view.tmpl)) {
-        let keys = view['j'],
+        let keys = view['i'],
             viewId = view.id,
             vf = Vframe_Vframes[viewId],
             ref = {
                 'a': []
          
             },
-            vdom, data = view['f'],
-            refData = view['d'];
-        view['k'] = 0;
-        view['j'] = {};
+            vdom, data = view['e'],
+            refData = vf['c'];
+        view['j'] = 0;
+        view['i'] = {};
         
         
             view.fire('dompatch');
@@ -1379,10 +1373,10 @@ let Updater_Digest = (view , tmpl) => {
             Updater_CheckInput(view, vdom['a']);
         }
         
-        V_SetChildNodes(view.root, view['l'], vdom, ref, vf, keys);
+        V_SetChildNodes(view.root, view['k'], vdom, ref, vf, keys);
         
         
-            view['l'] = vdom;
+            view['k'] = vdom;
             
                 /*
                     在dom diff patch时，如果已渲染的vframe有变化，则会在vom tree上先派发created事件，同时传递inner标志，vom tree处理alter事件派发状态，未进入created事件派发状态
@@ -1391,7 +1385,7 @@ let Updater_Digest = (view , tmpl) => {
         
                     有可能不需要endUpdate，所以hold fire要视情况而定
                 */
-                tmpl = ref['b'] || !view['h'];
+                tmpl = ref['b'] || !view['g'];
                 for (vdom of ref['a']) {
                     
                     CallFunction(View_CheckAssign, [vdom]);
@@ -1763,7 +1757,7 @@ let V_SetNode = (realNode, oldParent, lastVDOM, newVDOM, ref, vframe, keys) => {
                     }
                     //旧节点有view,新节点有view,且是同类型的view
                     if (newMxView && oldVf &&
-                        oldVf['h'] == uri[Path] &&
+                        oldVf['i'] == uri[Path] &&
                         (view = oldVf['b'])) {
                         htmlChanged = newHTML != lastVDOM['c'];
                         paramsChanged = newMxView != oldVf[Path];
@@ -1779,7 +1773,7 @@ let V_SetNode = (realNode, oldParent, lastVDOM, newVDOM, ref, vframe, keys) => {
                         }
                         if (paramsChanged ||
                             htmlChanged ) {
-                            assign = view['h'] && view['m'];
+                            assign = view['g'] && view['l'];
                             //如果有assign方法,且有参数或html变化
                             if (assign) {
                                 params = uri[Params];
@@ -1805,13 +1799,13 @@ let V_SetNode = (realNode, oldParent, lastVDOM, newVDOM, ref, vframe, keys) => {
                                     }
                                     if (result) {
                                         
-                                        view['n']++;
+                                        view['m']++;
                                         
                                         ref['a'].push(view);
                                     }
                                 } else if (ToTry(assign, params,/*[params, uri],*/ view)) {
                                     
-                                    view['n']++;
+                                    view['m']++;
                                     
                                     ref['a'].push(view);
                                 }
@@ -1874,18 +1868,18 @@ let processMixinsSameEvent = (exist, additional, temp?) => {
 
 
 let View_CheckAssign = view => {
-    if (view['n']) {
-        view['n']--;
+    if (view['m']) {
+        view['m']--;
     }
-    if (view['b'] && !view['n']) { //signature
+    if (view['b'] && !view['m']) { //signature
         ToTry(view['c'], Empty_Array, view);
     }
 };
 
 let View_DelegateEvents = (me, destroy) => {
-    let e, { 'o': eventsObject,
-        'i': selectorObject,
-        'p': eventsList, id } = me; //eventsObject
+    let e, { 'n': eventsObject,
+        'h': selectorObject,
+        'o': eventsList, id } = me; //eventsObject
     for (e in eventsObject) {
         Body_DOMEventBind(e, selectorObject[
             e], destroy);
@@ -2036,10 +2030,10 @@ let View_Prepare = oView => {
             }
         }
         prop['c'] = prop.render;
-        prop['o'] = eventsObject;
-        prop['p'] = eventsList;
-        prop['i'] = selectorObject;
-        prop['m'] = prop.assign;
+        prop['n'] = eventsObject;
+        prop['o'] = eventsList;
+        prop['h'] = selectorObject;
+        prop['l'] = prop.assign;
     }
     return oView[Spliter];
     
@@ -2058,13 +2052,12 @@ function View(id, root, owner, ops, me) {
     };
     
     me['b'] = 1; //标识view是否刷新过，对于托管的函数资源，在回调这个函数时，不但要确保view没有销毁，而且要确保view没有刷新过，如果刷新过则不回调
-    me['k'] = 1;
-    me['f'] = {
+    me['j'] = 1;
+    me['e'] = {
         id
     };
-    me['d'] = {};
-    me['j'] = {};
-    me['n'] = 0;
+    me['i'] = {};
+    me['m'] = 0;
     
     
     id = View['a'];
@@ -2085,9 +2078,9 @@ Assign(View[Prototype], MxEvent, {
         me = this;
         if (me['b']) {
             
-            f = me['h'];
+            f = me['g'];
             
-            me['h'] = 1;
+            me['g'] = 1;
             
             o = me.owner;
             o.mountZone(node);
@@ -2113,7 +2106,7 @@ Assign(View[Prototype], MxEvent, {
         }
     },
     get(key, result) {
-        result = this['f'];
+        result = this['e'];
         if (key) {
             result = result[key];
         }
@@ -2121,20 +2114,21 @@ Assign(View[Prototype], MxEvent, {
     },
     set(newData, unchanged) {
         let me = this,
-            oldData = me['f'],
-            keys = me['j'];
-        let changed = me['k'],
+            oldData = me['e'],
+            keys = me['i'];
+        let changed = me['j'],
             now, old, p;
         for (p in newData) {
             now = newData[p];
             old = oldData[p];
-            if ((!IsPrimitive(now) || old !== now) && !Has(unchanged, p)) {
+            if ((!IsPrimitive(now) || old != now) &&
+                !Has(unchanged, p)) {
                 keys[p] = 1;
                 changed = 1;
             }
             oldData[p] = now;
         }
-        me['k'] = changed;
+        me['j'] = changed;
         return me;
     },
     digest(data, unchanged) {
@@ -2154,13 +2148,13 @@ Assign(View[Prototype], MxEvent, {
 
             如果在digest的过程中，多次调用自身的digest，则后续的进行排队。前面的执行完成后，排队中的一次执行完毕
         */
-        if (me['k']) {
+        if (me['j']) {
             
             if (DEBUG) {
-                if (!me['q']) {
-                    me['q'] = 1;
+                if (!me['p']) {
+                    me['p'] = 1;
                     Updater_Digest(me);
-                    me['q'] = 0;
+                    me['p'] = 0;
                 } else if (DEBUG) {
                     console.error('Avoid redigest while updater is digesting');
                 }
@@ -2173,20 +2167,20 @@ Assign(View[Prototype], MxEvent, {
     ,
     snapshot() {
         let me = this;
-        me['r'] = JSON_Stringify(me['f']);
+        me['q'] = JSON_Stringify(me['e']);
         return me;
     },
     altered() {
         let me = this;
-        if (me['r']) {
-            return me['r'] != JSON_Stringify(me['f']);
+        if (me['q']) {
+            return me['q'] != JSON_Stringify(me['e']);
         }
     },
     // translate(data) {
-    //     return TranslateData(this['f'], data);
+    //     return TranslateData(this['e'], data);
     // },
     parse(origin) {
-        return ParseExpr(origin, this['d']);
+        return ParseExpr(origin, this.owner['c']);
     }
     
 });

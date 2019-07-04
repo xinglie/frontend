@@ -68,7 +68,7 @@
 .channel-info-img-hole{
     width: 8px;
     height: 8px;
-    background: #333;
+    background: #555;
     border-radius: 50%;
     margin: 50%;
     transform: translate(-4px, -4px);
@@ -223,18 +223,22 @@
     margin-left: 15px;
 }
 @keyframes m-left{
-    from {
-         transform: translate(0, 0); 
-        }
-    to { 
-        transform: translate(-100%, 0); 
+    0%{
+        transform: translate(0, 0); 
+    }
+    to{ 
+        transform: translate(-50%, 0); 
     }
 }
 .marquee-left{
-    display: inline-block;
-    padding-left: 100%;
-    white-space: nowrap;
     animation: m-left 20s linear infinite;
+    border-spacing: 0;
+    display: table;
+}
+.scroll-content{
+    white-space: nowrap;
+    min-width: 130px;
+    display: table-cell;
 }
 
 .anim-paused{
