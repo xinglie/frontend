@@ -23,7 +23,10 @@ let Throttle = (fn: () => void, timespan: number) => {
 export default Magix.View.extend({
     tmpl: '@default.html',
     render() {
-        this.digest();
+        let loc = Magix.Router.parse();
+        this.digest({
+            header: loc.get('from') != 'xl'
+        });
         this['@{update}'] = Throttle(() => {
             this.digest({
                 active: window.pageYOffset > 40
