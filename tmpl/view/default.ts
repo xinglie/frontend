@@ -23,9 +23,8 @@ let Throttle = (fn: () => void, timespan: number) => {
 export default Magix.View.extend({
     tmpl: '@default.html',
     render() {
-        let loc = Magix.Router.parse();
         this.digest({
-            header: loc.get('from') != 'xl'
+            header: Magix.config('logo')
         });
         this['@{update}'] = Throttle(() => {
             this.digest({

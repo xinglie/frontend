@@ -149,13 +149,14 @@ let TranslateData = (data, params) => {
     }
     return params;
 };
-let CacheSort = (a, b) => b['a'] - a['a'] || b['b'] - a['b'];
-function MxCache(max?: number, buffer?: number, remove?: (item: any) => void, me?: any) {
+let CacheSort = (a, b) => b['a'] - a['a'];
+//let CacheCounter = 0;
+function MxCache(max?: number, buffer?: number/*, remove?: (item: any) => void*/, me?: any) {
     me = this;
     me['a'] = [];
     me['b'] = buffer || 5; //buffer先取整，如果为0则再默认5
     me['c'] = me['b'] + (max || 20);
-    me['d'] = remove;
+    //me['d'] = remove;
 }
 
 Assign(MxCache[Prototype], {
@@ -165,7 +166,7 @@ Assign(MxCache[Prototype], {
         let r = c[Spliter + key];
         if (r) {
             r['a']++;
-            r['b'] = Counter++;
+            //r['b'] = CacheCounter++;
             r = r['c'];
         }
         return r;
@@ -194,20 +195,20 @@ Assign(MxCache[Prototype], {
         }
         r['c'] = value;
         r['a'] = 1;
-        r['b'] = Counter++;
+        //r['b'] = CacheCounter++;
     },
     del(k) {
         k = Spliter + k;
         let c = this['a'];
-        let r = c[k],
-            m = this['d'];
+        let r = c[k]/*,
+            m = this['d']*/;
         if (r) {
             r['a'] = -1;
             r['c'] = Empty;
             delete c[k];
-            if (m) {
-                ToTry(m, r['d']);
-            }
+            //if (m) {
+                //ToTry(m, r['d']);
+            //}
         }
     },
     has(k) {
@@ -366,6 +367,7 @@ let CallFunction = (fn, args?, context?) => {
 };
 let MxDefaultViewEntity;
 let M_Ext = '.js';
+let ImportPromises = {};
 let Async_Require = (name, fn) => {
     if (name) {
         if (MxGlobalView == name) {
@@ -390,7 +392,10 @@ let Async_Require = (name, fn) => {
                 if (!f.endsWith(M_Ext)) {
                     f += M_Ext;
                 }
-                a.push(import(f));
+                if (!ImportPromises[f]) {
+                    ImportPromises[f] = import(f);
+                }
+                a.push(ImportPromises[f]);
             }
             Promise.all(a).then(args => {
                 for (f of args) {
@@ -542,11 +547,18 @@ let Router_Update = (path, params, loc, replace, silent, lQuery) => {
         Router_UpdateHash(path, replace);
     }
 };
+
 let Router_Bind = () => {
     
     AddEventListener(Doc_Window, 'hashchange', Router_Diff);
     
     Router_Diff();
+};
+
+let Router_Unbind = () => {
+    
+    RemoveEventListener(Doc_Window, 'hashchange', Router_Diff);
+    
 };
 
 
@@ -816,6 +828,12 @@ let Vframe_Root = (rootId?, e?) => {
     }
     return Vframe_RootVframe;
 };
+let Vframe_Unroot = () => {
+    if (Vframe_RootVframe) {
+        Vframe_RootVframe.unmountVframe();
+        Vframe_RootVframe = Null;
+    }
+}
 
 
 let Vframe_AddVframe = (id, vframe) => {
@@ -848,18 +866,6 @@ let Vframe_RemoveVframe = (id, vframe?) => {
     }
 };
 
-let Vframe_RunInvokes = (vf, list, o) => {
-    list = vf['e']; //invokeList
-    while (list.length) {
-        o = list.shift();
-        if (!o.r) { //remove
-            CallFunction(vf.invoke, [o.n, o.a], vf);
-            //vf.invoke(o.n, o.a); //name,arguments
-        }
-        delete list[o.k]; //key
-    }
-};
-
 
 let Vframe_GetVfId = node => node['b'] || (node['b'] = GUID());
 function Vframe(root, pId?) {
@@ -867,11 +873,9 @@ function Vframe(root, pId?) {
     let vfId = Vframe_GetVfId(root);
     me.id = vfId;
     me.root = root;
-    me['f'] = 1; //signature
+    me['e'] = 1; //signature
     me['d'] = {}; //childrenMap
     me.pId = pId; 
-    me['e'] = []; //invokeList
-    
     me['c'] = {};
     Vframe_AddVframe(vfId, me);
 }
@@ -895,9 +899,9 @@ Assign(Vframe[Prototype], {
         let me = this;
         let { id, root, pId } = me;
         let po, sign, view, params, ctors;
-        if (!me['g'] && root) { //alter
-            me['g'] = 1;
-            me['h'] = root.innerHTML;
+        if (!me['f'] && root) { //alter
+            me['f'] = 1;
+            me['g'] = root.innerHTML;
         }
         me.unmountView();
         if (root && viewPath) {
@@ -906,11 +910,11 @@ Assign(Vframe[Prototype], {
             me[Path] = viewPath;
             params = po[Params];
             Vframe_TranslateQuery(pId, viewPath, params);
-            me['i'] = view;
+            me['h'] = view;
             Assign(params, viewInitParams);
-            sign = me['f'];
+            sign = me['e'];
             Async_Require(view, TView => {
-                if (sign == me['f']) { //有可能在view载入后，vframe已经卸载了
+                if (sign == me['e']) { //有可能在view载入后，vframe已经卸载了
                     if (!TView) {
                         return Mx_Cfg.error(Error(`${id} cannot load:${view}`));
                     }
@@ -951,7 +955,7 @@ Assign(Vframe[Prototype], {
                     CallFunction(() => {
                         view['c']();
                         if (!view.tmpl) { //无模板
-                            me['g'] = 0; //不会修改节点，因此销毁时不还原
+                            me['f'] = 0; //不会修改节点，因此销毁时不还原
                             if (!view['g']) {
                                 view.endUpdate();
                             }
@@ -968,7 +972,7 @@ Assign(Vframe[Prototype], {
     unmountView() {
         let me = this;
         let { 'b': v, root } = me;
-        me['e'] = [];
+        me['i'] = [];
         if (v) {
             me.unmountZone();
             me['b'] = 0; //unmountView时，尽可能早的删除vframe上的$v对象，防止$v销毁时，再调用该 vfrmae的类似unmountZone方法引起的多次created
@@ -981,11 +985,11 @@ Assign(Vframe[Prototype], {
                 View_DelegateEvents(v, 1);
                 v.owner = v.root = Null;
             }
-            if (root && me['g'] /*&&!keepPreHTML*/) { //如果$v本身是没有模板的，也需要把节点恢复到之前的状态上：只有保留模板且$v有模板的情况下，这条if才不执行，否则均需要恢复节点的html，即$v安装前什么样，销毁后把节点恢复到安装前的情况
-                SetInnerHTML(root, me['h']);
+            if (root && me['f'] /*&&!keepPreHTML*/) { //如果$v本身是没有模板的，也需要把节点恢复到之前的状态上：只有保留模板且$v有模板的情况下，这条if才不执行，否则均需要恢复节点的html，即$v安装前什么样，销毁后把节点恢复到安装前的情况
+                SetInnerHTML(root, me['g']);
             }
         }
-        me['f']++; //增加signature，阻止相应的回调，见mountView
+        me['e']++; //增加signature，阻止相应的回调，见mountView
     },
     mountVframe(node, viewPath, viewInitParams) {
         let me = this,
@@ -1757,7 +1761,7 @@ let V_SetNode = (realNode, oldParent, lastVDOM, newVDOM, ref, vframe, keys) => {
                     }
                     //旧节点有view,新节点有view,且是同类型的view
                     if (newMxView && oldVf &&
-                        oldVf['i'] == uri[Path] &&
+                        oldVf['h'] == uri[Path] &&
                         (view = oldVf['b'])) {
                         htmlChanged = newHTML != lastVDOM['c'];
                         paramsChanged = newMxView != oldVf[Path];
@@ -2053,9 +2057,20 @@ function View(id, root, owner, ops, me) {
     
     me['b'] = 1; //标识view是否刷新过，对于托管的函数资源，在回调这个函数时，不但要确保view没有销毁，而且要确保view没有刷新过，如果刷新过则不回调
     me['j'] = 1;
-    me['e'] = {
-        id
-    };
+
+    if (DEBUG) {
+        me['e'] = Safeguard({
+            id
+        }, true, key => {
+            if (key == 'id') {
+                throw new Error(`avoid write ${key} to view data!`);
+            }
+        });
+    } else {
+        me['e'] = {
+            id
+        };
+    }
     me['i'] = {};
     me['m'] = 0;
     
@@ -2074,19 +2089,13 @@ Assign(View[Prototype], MxEvent, {
     init: Noop,
     render: Noop,
     
-    endUpdate(node, me, o, f) {
+    endUpdate(node, me) {
         me = this;
         if (me['b']) {
             
-            f = me['g'];
-            
             me['g'] = 1;
             
-            o = me.owner;
-            o.mountZone(node);
-            if (!f) {
-                Timeout(Vframe_RunInvokes, 0, o);
-            }
+            me.owner.mountZone(node);
             
         }
     },
@@ -2228,6 +2237,13 @@ let Magix = {
             });
         }
     },
+    unboot() {
+        
+        Magix_Booted = 0;
+        Router_Unbind();
+        
+        Vframe_Unroot();
+    },
     toMap: ToMap,
     toTry: ToTry,
     toUrl: ToUri,
@@ -2253,6 +2269,7 @@ let Magix = {
     Router,
     
     mark: Mark,
+    unmark: Unmark,
     node: GetById,
     task: CallFunction
 };
@@ -2923,15 +2940,6 @@ let Magix = {
          * @param node 哪块区域需要更新，默认当前view
          */
         endUpdate(node?: HTMLElement): void
-        /**
-         * 包装异步回调
-         * 为什么要包装？
-         * 在单页应用的情况下，一些异步(如setTimeout,ajax等)回调执行时，当前view已经被销毁。如果你的回调中去操作了DOM，
-         * 则会出错，为了避免这种情况的出现，可以调用该方法包装一次，magix会确保你的回调在view未销毁的情况下被调用
-         * @param callback 回调方法
-         * @param context 回调方法执行时的this指向
-         */
-        //wrapAsync<TThisType>(callback: (this: TThisType, ...args: any[]) => void, context?: TThisType): (...args: any[]) => void
         
         /**
          * 获取设置的数据，当key未传递时，返回整个数据对象
@@ -3122,7 +3130,11 @@ let Magix = {
          * 应用初始化入口
          * @param cfg 配置信息参数对象
          */
-        boot(cfg: Config): void
+        boot(cfg?: Config): void
+        /**
+         * 取消安装
+         */
+        unboot(): void
         /**
          * 把列表转化成hash对象。Magix.toMap([1,2,3,5,6]) => {1:1,2:1,3:1,4:1,5:1,6:1}。Magix.toMap([{id:20},{id:30},{id:40}],'id') => {20:{id:20},30:{id:30},40:{id:40}}
          * @param list 源数组

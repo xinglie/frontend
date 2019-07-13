@@ -1,12 +1,7 @@
 {
     "compilerOptions": {
         "baseUrl": "./",
-        "target": "es5",
-        "lib": [
-            "es5",
-            "es2015",
-            "dom",
-            "scripthost"
-        ]
+        "target": "esnext",
+        "module": "esnext"
     }
 }
