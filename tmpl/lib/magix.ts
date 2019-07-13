@@ -559,6 +559,7 @@ let Router_Unbind = () => {
     
     RemoveEventListener(Doc_Window, 'hashchange', Router_Diff);
     
+    Router_LLoc = Router_Init_Loc;
 };
 
 
@@ -575,11 +576,12 @@ let Router_ChgdCache = new MxCache();
 let Router_WinLoc = location;
 let Router_LastChanged;
 let Router_Silent = 0;
-let Router_LLoc = {
+let Router_Init_Loc = {
     query: {},
     [Params]: {},
     href: Empty
 };
+let Router_LLoc = Router_Init_Loc;
 let Router_TrimHashReg = /(?:^.*\/\/[^\/]+|#.*$)/gi;
 let Router_TrimQueryReg = /^[^#]*#?/;
 function GetParam(key, defaultValue) {
@@ -2240,6 +2242,9 @@ let Magix = {
     unboot() {
         
         Magix_Booted = 0;
+        
+        Router.off(Changed, Dispatcher_NotifyChange);
+        
         Router_Unbind();
         
         Vframe_Unroot();
