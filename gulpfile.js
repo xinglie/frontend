@@ -19,7 +19,6 @@ combineTool.config({
         mxRoot: 'gallery/'
     },
     scopedCss: [
-        './tmpl/gallery/mx-style/index.less',
         './tmpl/assets/index.less'
     ],
     compileJSStart(content) {

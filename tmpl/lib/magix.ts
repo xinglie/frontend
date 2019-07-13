@@ -810,6 +810,7 @@ let Dispatcher_NotifyChange = (e, vf, view) => {
 
 let Vframe_RootVframe;
 let Vframe_Vframes = {};
+let Vframe_RootId;
 let Vframe_TranslateQuery = (pId, src, params, pVf?) => {
     if (src.indexOf(Spliter) > 0 &&
         (pVf = Vframe_Vframes[pId])) {
@@ -818,7 +819,7 @@ let Vframe_TranslateQuery = (pId, src, params, pVf?) => {
 };
 let Vframe_Root = (rootId?, e?) => {
     if (!Vframe_RootVframe) {
-        rootId = Mx_Cfg.rootId;
+        rootId = Vframe_RootId = Mx_Cfg.rootId;
         e = GetById(rootId);
         if (!e) {
             if (DEBUG) {
@@ -869,7 +870,7 @@ let Vframe_RemoveVframe = (id, vframe?) => {
 };
 
 
-let Vframe_GetVfId = node => node['b'] || (node['b'] = GUID());
+let Vframe_GetVfId = node => node['b'] || (node['b'] = GUID(Vframe_RootId));
 function Vframe(root, pId?) {
     let me = this;
     let vfId = Vframe_GetVfId(root);
@@ -2212,42 +2213,46 @@ let Magix = {
         return r;
     },
     boot(cfg) {
-        Assign(Mx_Cfg, cfg); //先放到配置信息中，供ini文件中使用
-        
-        
-        Router.on(Changed, Dispatcher_NotifyChange);
-        
-        Magix_Booted = 1;
-        Router_Bind();
-        
-        if (DEBUG) {
-            let whiteList = {
-                defaultView: 1,
-                error: 1,
-                defaultPath: 1,
-                recast: 1,
-                rewrite: 1,
-                rootId: 1,
-                routes: 1,
-                unmatchView: 1,
-                title: 1
-            };
-            Mx_Cfg = Safeguard(Mx_Cfg, true, (key, value) => {
-                if (Has(whiteList, key)) {
-                    throw new Error(`avoid write ${key} to magix config!`);
-                }
-            });
+        if (!Magix_Booted) {
+            Magix_Booted = 1;
+            Assign(Mx_Cfg, cfg); //先放到配置信息中，供ini文件中使用
+            
+            
+            Router.on(Changed, Dispatcher_NotifyChange);
+            
+            Router_Bind();
+            
+            if (DEBUG) {
+                let whiteList = {
+                    defaultView: 1,
+                    error: 1,
+                    defaultPath: 1,
+                    recast: 1,
+                    rewrite: 1,
+                    rootId: 1,
+                    routes: 1,
+                    unmatchView: 1,
+                    title: 1
+                };
+                Mx_Cfg = Safeguard(Mx_Cfg, true, (key, value) => {
+                    if (Has(whiteList, key)) {
+                        throw new Error(`avoid write ${key} to magix config!`);
+                    }
+                });
+            }
         }
     },
     unboot() {
-        
-        Magix_Booted = 0;
-        
-        Router.off(Changed, Dispatcher_NotifyChange);
-        
-        Router_Unbind();
-        
-        Vframe_Unroot();
+        if (Magix_Booted) {
+            
+            Magix_Booted = 0;
+            
+            Router.off(Changed, Dispatcher_NotifyChange);
+            
+            Router_Unbind();
+            
+            Vframe_Unroot();
+        }
     },
     toMap: ToMap,
     toTry: ToTry,

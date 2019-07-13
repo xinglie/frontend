@@ -3,19 +3,19 @@
 */
 'ref@./default.less';
 import Magix from '../lib/magix';
-import { List, ListMap } from '../data/list';
+import Bridge from './bridget';
 let bodyStyle = document.body.style;
 export default Magix.View.extend({
     tmpl: '@list.html',
     init() {
-        this.observeLocation('c');
+        let render = this.render.bind(this);
+        Bridge.on('@{when.c.change}', render);
+        this.on('destroy', () => {
+            Bridge.off('@{when.c.change}', render);
+        });
     },
     render() {
-        let { params } = Magix.Router.parse();
-        let tab = params.c;
-        if (!ListMap[tab]) {
-            tab = List[0].key;
-        }
+        let tab = Bridge["@{get.c.id}"]();
         bodyStyle.cursor = 'wait';
         let latestMarker = Magix.mark(this, '@{render}');
         Magix.use(`@../data/${tab}`, list => {

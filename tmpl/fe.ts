@@ -1,13 +1,13 @@
 import Magix from './lib/magix';
 import I18n from './i18n/index';
 let url = import.meta.url;
-let { params, path } = Magix.parseUrl(url);
 let Starter = {
-    config(rootId) {
+    config(rootId, options) {
         Magix.applyStyle('@scoped.style');
-        let src = path.replace(/[^/]+$/, '');
+        let src = url.replace(/[^/]+$/, '');
 
-        let lang = navigator.language.toLowerCase();
+        let lang = navigator.language.toLowerCase(),
+            scrollId = options.scrollId;
         try {
             let store = window.localStorage;
             if (store) {
@@ -16,7 +16,9 @@ let Starter = {
         } catch{
 
         }
-        document.title = I18n('@{lang#site.name}');
+        if (options.hash) {
+            document.title = I18n('@{lang#site.name}');
+        }
         Magix.View.merge({
             ctor() {
                 this.set({
@@ -30,7 +32,9 @@ let Starter = {
             paths: {
                 '~fe': src
             },
-            logo: params.from != 'xl',
+            logo: options.logo,
+            hash: options.hash,
+            scrollId,
             rootId: rootId,
             defaultPath: '/nav',
             defaultView: '~fe/view/default',
@@ -51,9 +55,5 @@ let Starter = {
     unboot() {
         Magix.unboot();
     }
-}
-if (!params.delay) {
-    Starter.config('app');
-    Starter.boot();
 }
 export default Starter;

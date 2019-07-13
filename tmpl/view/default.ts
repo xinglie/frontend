@@ -27,12 +27,19 @@ export default Magix.View.extend({
             header: Magix.config('logo')
         });
         this['@{update}'] = Throttle(() => {
+            let hash = Magix.config('hash');
+            let sId = Magix.config('scrollId');
+            let sTop = hash ? window.pageYOffset : Magix.node(sId).scrollTop;
             this.digest({
-                active: window.pageYOffset > 40
+                active: sTop > 40
             });
         }, 50);
     },
-    '$win<scroll>'() {
-        this['@{update}']();
+    '$doc<scroll>&capture'(e) {
+        let hash = Magix.config('hash');
+        let sId = Magix.config('scrollId');
+        if (hash || e.target.id == sId) {
+            this['@{update}']();
+        }
     }
 });
