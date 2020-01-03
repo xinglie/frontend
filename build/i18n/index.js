@@ -1,2 +1,2 @@
-/*!1.0.2 kooboy_li@163.com*/
-import e from"../lib/magix.js";import t from"./zh-cn.js";let a={"zh-cn":t,zh:t},l=e.has,n=/\{(\d+)\}/g;export default(t,...r)=>{let g=(e.config("lang")||navigator.language).toLowerCase();l(a,g)||(g="zh-cn");let o=a[g],h=l(o,t)?o[t]:t;return r.length&&(h=h.replace(n,(e,t,a)=>(t|=0,r.length>t?(a=r[t],l(o,a)?o[a]:a):e))),h};
+/*!1.0.5 kooboy_li@163.com*/
+import e from"https://xinglie.github.io/build/lib/magix.js";import t from"./zh-cn.js";let l={"zh-cn":t,zh:t},g=e.has,i=/\{(\d+)\}/g;export default(t,...n)=>{let a=(e.config("fe.lang")||navigator.language).toLowerCase();g(l,a)||(a="zh-cn");let o=l[a],r=g(o,t)?o[t]:t;return n.length&&(r=r.replace(i,(e,t,l)=>(t|=0,n.length>t?(l=n[t],g(o,l)?o[l]:l):e))),r};

@@ -1,4 +1,4 @@
-import Magix from '../lib/magix';
+import Magix from 'https://xinglie.github.io/build/lib/magix.js';
 export default Object.assign({
     '@{save.c.id}'(cId) {
         if (cId != this['@{c.id}']) {

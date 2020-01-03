@@ -2,13 +2,14 @@
     author:xinglie.lkf@alibaba-inc.com
 */
 'ref@./default.less';
-import Magix from '../lib/magix';
+import View from './base';
+import Magix from 'https://xinglie.github.io/build/lib/magix.js';
 import { List, ListMap } from '../data/list';
 import Bridge from './bridget';
-export default Magix.View.extend({
+export default View.extend({
     tmpl: '@tab.html',
     init() {
-        let hash = Magix.config('hash');
+        let hash = Magix.config('fe.hash');
         if (hash) {
             this.observeLocation('c');
         }
@@ -17,7 +18,7 @@ export default Magix.View.extend({
         });
     },
     render() {
-        let hash = Magix.config('hash'),
+        let hash = Magix.config('fe.hash'),
             tab;
         if (hash) {
             let { params } = Magix.Router.parse();
@@ -34,12 +35,12 @@ export default Magix.View.extend({
         });
     },
     '@{change.tab}<click>'(e) {
-        let hash = Magix.config('hash');
+        let hash = Magix.config('fe.hash');
         if (hash) {
             window.scrollTo(0, 0);
             Magix.Router.to('/nav/' + e.params.tab);
         } else {
-            let n = Magix.node(Magix.config('scrollId'));
+            let n = Magix.node(Magix.config('fe.scrollId'));
             n.scrollTop = 0;
             Bridge["@{save.c.id}"](e.params.tab);
             this.render();

@@ -2,10 +2,11 @@
     author:xinglie.lkf@alibaba-inc.com
 */
 'ref@./default.less';
-import Magix from '../lib/magix';
+import View from './base';
+import Magix from 'https://xinglie.github.io/build/lib/magix.js';
 import Bridge from './bridget';
 let bodyStyle = document.body.style;
-export default Magix.View.extend({
+export default View.extend({
     tmpl: '@list.html',
     init() {
         let render = this.render.bind(this);
@@ -16,17 +17,21 @@ export default Magix.View.extend({
     },
     render() {
         let tab = Bridge["@{get.c.id}"]();
-        bodyStyle.cursor = 'wait';
-        let latestMarker = Magix.mark(this, '@{render}');
-        Magix.use(`@../data/${tab}`, list => {
-            if (latestMarker()) {
-                this.digest({
-                    list: list || []
-                });
-                bodyStyle.cursor = 'default';
-            } else {
-                console.log('ignore');
-            }
-        });
+        let current = this['@{current.tab}'];
+        if (tab && current != tab) {
+            bodyStyle.cursor = 'wait';
+            this['@{current.tab}'] = tab;
+            let latestMarker = Magix.mark(this, '@{render}');
+            Magix.use(`@mx:../data/${tab}`, list => {
+                if (latestMarker()) {
+                    this.digest({
+                        list: list || []
+                    });
+                    bodyStyle.cursor = 'default';
+                } else {
+                    console.log('ignore');
+                }
+            });
+        }
     }
 });

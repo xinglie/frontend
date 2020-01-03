@@ -7,10 +7,10 @@
         <meta name="description" content="收录了互联网优秀的前端技术类网站，为互联网前端开发工程师提供方便快捷的网址导航。"/>
         <link type="image/x-icon" href="./icon.png" rel="shortcut icon">
         <title>Loading</title>
-        <style>body,ul{padding:0;margin:0}ul{list-style-type:none}body{font:14px/1.5 'helvetica neue',arial,'hiragino sans gb',stheiti,'wenquanyi micro hei',sans-serif}@keyframes load{0%{width:0}100%{width:98%}}.outer{background:#e6e6e6;position:fixed;left:50%;top:50%;width:300px;margin:-20px 0 0 -150px;height:2px;}.inner{width:0%;background:#4d7fff;height:100%;animation:load 3s forwards;margin-bottom:-2px;}</style>
+        <style>body,ul{padding:0;margin:0}ul{list-style:none}body{font:14px/1.5 'helvetica neue',arial,'hiragino sans gb',stheiti,'wenquanyi micro hei',sans-serif}@keyframes load{0%{width:0}100%{width:98%}}.outer{background:#e6e6e6;position:fixed;left:50%;top:50%;width:300px;margin:-20px 0 0 -150px;height:2px;}.inner{width:0%;background:#4d7fff;height:100%;animation:load 3s forwards;margin-bottom:-2px;}</style>
     </head>
     <body>
         <div id="fe"><div class="outer"><div class="inner"></div></div></div>
-        <script type="module">import a from './build/fe.js';a.config('fe',{logo:1,hash:1});a.boot()</script>
+        <script type="module">import a from './build/fe.js';a.mount('fe',{logo:1,hash:1})</script>
     </body>
 </html>

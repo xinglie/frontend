@@ -4,11 +4,11 @@
   "version": "1.0.0",
   "author": "kooboy_li <kooboy_li@163.com>",
   "dependencies": {
-    "del": "3.0.0",
-    "gulp": "3.9.1",
+    "del": "5.1.0",
+    "gulp": "4.0.2",
     "gulp-terser-scoped": "^1.0.0",
     "gulp-watch": "5.0.1",
-    "typescript": "3.1.6"
+    "typescript": "3.7.4"
   },
   "private": true
 }

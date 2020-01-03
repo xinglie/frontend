@@ -36,16 +36,16 @@ combineTool.config({
 
 gulp.task('cleanSrc', () => del(srcFolder));
 
-gulp.task('combine', ['cleanSrc'], () => {
+gulp.task('combine', gulp.series('cleanSrc', () => {
     return combineTool.combine().then(() => {
         console.log('complete');
     }).catch(function (ex) {
         console.log('gulpfile:', ex);
         process.exit();
     });
-});
+}));
 
-gulp.task('watch', ['combine'], () => {
+gulp.task('watch', gulp.series('combine', () => {
     watch(tmplFolder + '/**/*', e => {
         if (fs.existsSync(e.path)) {
             var c = combineTool.processFile(e.path);
@@ -56,7 +56,7 @@ gulp.task('watch', ['combine'], () => {
             combineTool.removeFile(e.path);
         }
     });
-});
+}));
 
 let langReg = /@\{lang#[\S\s]+?\}/g;
 gulp.task('lang-check', () => {
@@ -136,7 +136,7 @@ gulp.task('cleanBuild', () => {
     return del(buildFolder);
 });
 
-gulp.task('build', ['cleanBuild', 'cleanSrc'], () => {
+gulp.task('build', gulp.series('cleanBuild', 'cleanSrc', () => {
     combineTool.config({
         debug: false
     });
@@ -160,4 +160,4 @@ gulp.task('build', ['cleanBuild', 'cleanSrc'], () => {
     }).catch(ex => {
         console.error(ex);
     });
-});
+}));

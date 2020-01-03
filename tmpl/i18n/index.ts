@@ -1,4 +1,4 @@
-import Magix from '../lib/magix';
+import Magix from 'https://xinglie.github.io/build/lib/magix.js';
 import ZH from './zh-cn';
 let I18n = {
     'zh-cn': ZH,
@@ -8,7 +8,7 @@ let DefaultLang = 'zh-cn';
 let Has = Magix.has;
 let Reg = /\{(\d+)\}/g;
 export default (key: string, ...args: any[]) => {
-    let lang = (Magix.config('lang') || navigator.language).toLowerCase();
+    let lang = (Magix.config('fe.lang') || navigator.language).toLowerCase();
     if (!Has(I18n, lang)) {
         lang = DefaultLang;
     }

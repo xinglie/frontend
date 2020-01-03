@@ -1,7 +1,8 @@
 /*
     author:xinglie.lkf@alibaba-inc.com
 */
-import Magix from '../lib/magix';
+import Magix from 'https://xinglie.github.io/build/lib/magix.js';
+import View from './base';
 Magix.applyStyle('@default.less');
 let Throttle = (fn: () => void, timespan: number) => {
     timespan = timespan || 150;
@@ -20,24 +21,24 @@ let Throttle = (fn: () => void, timespan: number) => {
         }
     };
 }
-export default Magix.View.extend({
+export default View.extend({
     tmpl: '@default.html',
     render() {
         this.digest({
-            header: Magix.config('logo')
+            header: Magix.config('fe.logo')
         });
         this['@{update}'] = Throttle(() => {
-            let hash = Magix.config('hash');
-            let sId = Magix.config('scrollId');
+            let hash = Magix.config('fe.hash');
+            let sId = Magix.config('fe.scrollId');
             let sTop = hash ? window.pageYOffset : Magix.node(sId).scrollTop;
             this.digest({
                 active: sTop > 40
             });
         }, 50);
     },
-    '$doc<scroll>&capture'(e) {
-        let hash = Magix.config('hash');
-        let sId = Magix.config('scrollId');
+    '$doc<scroll>&{capture:true}'(e) {
+        let hash = Magix.config('fe.hash');
+        let sId = Magix.config('fe.scrollId');
         if (hash || e.target.id == sId) {
             this['@{update}']();
         }

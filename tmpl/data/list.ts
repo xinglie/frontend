@@ -1,4 +1,4 @@
-import Magix from '../lib/magix.js';
+import Magix from 'https://xinglie.github.io/build/lib/magix.js';
 let list = [{
     key: 'fe',
     text: '@{lang#data.fe}'
