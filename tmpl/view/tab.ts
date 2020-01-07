@@ -3,7 +3,7 @@
 */
 'ref@./default.less';
 import View from './base';
-import Magix from 'https://xinglie.github.io/build/lib/magix.js';
+import Magix from 'magix5';
 import { List, ListMap } from '../data/list';
 import Bridge from './bridget';
 export default View.extend({

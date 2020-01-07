@@ -31,6 +31,12 @@ combineTool.config({
         });
         str = str.outputText;
         return str;
+    },
+    resolveRequire(m) {
+        if (m.mId == 'magix5') {
+            m.mId = 'https://xinglie.github.io/build/lib/magix.js';
+        }
+        //console.log(e);
     }
 });
 

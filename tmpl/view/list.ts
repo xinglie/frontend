@@ -3,7 +3,7 @@
 */
 'ref@./default.less';
 import View from './base';
-import Magix from 'https://xinglie.github.io/build/lib/magix.js';
+import Magix from 'magix5';
 import Bridge from './bridget';
 let bodyStyle = document.body.style;
 export default View.extend({

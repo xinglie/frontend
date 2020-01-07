@@ -1,4 +1,4 @@
-import Magix from 'https://xinglie.github.io/build/lib/magix.js';
+import Magix from 'magix5';
 import I18n from '../i18n/index';
 export default Magix.View.extend({
     ctor() {

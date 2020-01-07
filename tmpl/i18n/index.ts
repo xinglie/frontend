@@ -1,4 +1,4 @@
-import Magix from 'https://xinglie.github.io/build/lib/magix.js';
+import Magix from 'magix5';
 import ZH from './zh-cn';
 let I18n = {
     'zh-cn': ZH,

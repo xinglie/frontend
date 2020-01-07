@@ -1,7 +1,7 @@
 /*
     author:xinglie.lkf@alibaba-inc.com
 */
-import Magix from 'https://xinglie.github.io/build/lib/magix.js';
+import Magix from 'magix5';
 import View from './base';
 Magix.applyStyle('@default.less');
 let Throttle = (fn: () => void, timespan: number) => {

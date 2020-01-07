@@ -1,4 +1,4 @@
-import Magix from 'https://xinglie.github.io/build/lib/magix.js';
+import Magix from 'magix5';
 import I18n from './i18n/index';
 Magix.applyStyle('@scoped.style');
 let url = import.meta.url;
@@ -56,7 +56,7 @@ export default {
         } else {
             let root = Magix.Vframe.root();
             let node = Magix.node(rootId);
-            if (node) {
+            if (node && root) {
                 root.mountVframe(node, '~fe/view/default');
             }
         }
@@ -68,7 +68,7 @@ export default {
         } else {
             let root = Magix.Vframe.root();
             let node = Magix.node(rootId);
-            if (node) {
+            if (node && root) {
                 root.unmountVframe(node);
             }
         }
